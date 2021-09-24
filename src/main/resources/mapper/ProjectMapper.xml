@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zentao.publish.dao.IProjectDao">
+    <resultMap id="projectMap" type="com.zentao.publish.entity.PubProject">
+        <id column="id" property="id" jdbcType="CHAR"/>
+        <result column="user_id" property="userId" jdbcType="CHAR"/>
+        <result column="project" property="project" jdbcType="VARCHAR"/>
+        <result column="publish_path" property="publishPath" jdbcType="VARCHAR"/>
+        <result column="version_name_rule" property="versionNameRule" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIME"/>
+        <result column="modify_time" property="modifyTime" jdbcType="TIME"/>
+    </resultMap>
+
+    <insert id="create" keyProperty="id" keyColumn="id">
+        insert into pub_project
+        values (#{id}, #{userId}, #{project}, #{publishPath}, #{versionNameRule}, #{createTime}, #{modifyTime})
+    </insert>
+
+    <update id="update">
+        update pub_project
+        set user_id = #{userId},
+            project= #{project},
+            publish_path = #{publishPath},
+            version_name_rule = #{versionNameRule},
+            modify_time =#{modifyTime}
+        where id = #{id}
+    </update>
+
+    <delete id="delete">
+        delete from pub_project where id = #{id}
+    </delete>
+
+    <select id="getAll" resultMap="projectMap">
+        select * from pub_project order by project
+    </select>
+
+    <select id="getById" resultMap="projectMap">
+        select * from pub_project where id = #{id}
+    </select>
+
+    <select id="getByUserId" resultMap="projectMap">
+        select * from pub_project where user_id = #{userId} order by project
+    </select>
+</mapper>
