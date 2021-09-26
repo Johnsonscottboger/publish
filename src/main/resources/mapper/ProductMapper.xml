@@ -1,53 +1,50 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
-<mapper namespace="com.zentao.publish.dao.IProjectDao">
-    <resultMap id="projectMap" type="com.zentao.publish.entity.PubProject">
+<mapper namespace="com.zentao.publish.dao.IProductDao">
+    <resultMap id="productMap" type="com.zentao.publish.entity.PubProduct">
         <id column="id" property="id" jdbcType="CHAR"/>
-        <result column="user_id" property="userId" jdbcType="CHAR"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="publish_path" property="publishPath" jdbcType="VARCHAR"/>
-        <result column="version_name_rule" property="versionNameRule" jdbcType="VARCHAR"/>
         <result column="create_time" property="createTime" jdbcType="TIME"/>
         <result column="modify_time" property="modifyTime" jdbcType="TIME"/>
     </resultMap>
 
     <insert id="create" keyProperty="id" keyColumn="id">
-        insert into pub_project
-        values (#{id}, #{userId}, #{name}, #{publishPath}, #{versionNameRule}, #{createTime}, #{modifyTime})
+        insert into pub_product
+        values (#{id}, #{name}, #{publishPath}, #{createTime}, #{modifyTime})
     </insert>
 
     <update id="update">
-        update pub_project
-        set user_id           = #{userId},
-            name              = #{name},
+        update pub_product
+        set name              = #{name},
             publish_path      = #{publishPath},
-            version_name_rule = #{versionNameRule},
             modify_time       =#{modifyTime}
         where id = #{id}
     </update>
 
     <delete id="delete">
         delete
-        from pub_project
+        from pub_product
         where id = #{id}
     </delete>
 
-    <select id="getAll" resultMap="projectMap">
+    <select id="getAll" resultMap="productMap">
         select *
-        from pub_project
+        from pub_product
         order by name
     </select>
 
-    <select id="getById" resultMap="projectMap">
+    <select id="getById" resultMap="productMap">
         select *
-        from pub_project
+        from pub_product
         where id = #{id}
     </select>
 
-    <select id="getByUserId" resultMap="projectMap">
+    <select id="getProjects" resultMap="projectMap">
         select *
-        from pub_project
-        where user_id = #{userId}
-        order by name
+        from pub_subscribe s,
+             pub_project p
+        where s.project_id = p.id
+          and s.product_id = #{id}
     </select>
 </mapper>

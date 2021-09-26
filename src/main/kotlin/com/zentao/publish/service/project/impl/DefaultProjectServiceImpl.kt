@@ -9,7 +9,7 @@ import java.util.*
 import javax.annotation.Resource
 
 @Service
-class DefaultProjectService : IProjectService{
+class DefaultProjectServiceImpl : IProjectService{
 
     @Resource
     private lateinit var _dao : IProjectDao

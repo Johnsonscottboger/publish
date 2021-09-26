@@ -90,7 +90,7 @@ class DefaultSvnServiceImpl : ISvnService {
 
         if (output.any { p -> p.startsWith("Committed") }) {
             //提交成功后检出到本地目录
-            val path = Path(System.getenv("appdata"), "publish", project.project!!, version)
+            val path = Path(System.getenv("appdata"), "publish", project.name!!, version)
             val result =
                 exec("svn checkout \"${publishPath}\" \"${path}\" --username ${user.username} --password ${user.password}")
             if (result.any { p -> p.startsWith("Checked") }) {
@@ -107,7 +107,7 @@ class DefaultSvnServiceImpl : ISvnService {
             list(input.projectId).maxByOrNull { p -> p.revision.toInt() }?.entryName
         } ?: throw NullPointerException()
 
-        val path = Path(System.getenv("appdata"), "publish", project.project!!, version)
+        val path = Path(System.getenv("appdata"), "publish", project.name!!, version)
 
         val addOutput = exec("svn add \"${path}\" --force")
         val output = exec("svn commit -m \"Commit\" \"${path}\" --username ${user.username} --password ${user.password}")
