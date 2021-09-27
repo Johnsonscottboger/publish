@@ -2,7 +2,7 @@ package com.zentao.publish.viewmodel
 
 import java.util.*
 
-data class Subscription(
+data class Subscribe(
     val id: String? = null,
     val productId: String? = null,
     val projectId: String? = null,
@@ -11,6 +11,4 @@ data class Subscription(
     val lastProductTime: Date? = null,
     val createTime: Date? = null,
     val modifyTime: Date? = null,
-    val product: Product? = null,
-    val project: Project? = null
 )

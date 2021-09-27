@@ -29,7 +29,7 @@ class ProductController {
     }
 
     @ResponseBody
-    @PostMapping("delete")
+    @PostMapping("/delete")
     fun delete(@RequestBody id: String) {
         _service.delete(id)
     }
