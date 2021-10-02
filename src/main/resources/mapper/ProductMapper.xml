@@ -40,11 +40,4 @@
         where id = #{id}
     </select>
 
-    <select id="getProjects" resultMap="projectMap">
-        select *
-        from pub_subscribe s,
-             pub_project p
-        where s.project_id = p.id
-          and s.product_id = #{id}
-    </select>
 </mapper>

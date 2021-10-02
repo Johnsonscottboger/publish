@@ -13,15 +13,16 @@
     </resultMap>
 
     <insert id="create" keyProperty="id" keyColumn="id">
-        insert into pub_subscribe
+        insert into pub_subscribe (id,
+                                   product_id,
+                                   project_id,
+                                   product_sub_path,
+                                   create_time)
         values (#{id},
                 #{productId},
                 #{projectId},
                 #{productSubPath},
-                #{lastProductVersion},
-                #{lastProductTime},
-                #{createTime}
-                #{modifyTime})
+                #{createTime})
     </insert>
 
     <update id="update">

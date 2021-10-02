@@ -12,4 +12,6 @@ interface ISvnService {
     fun create(projectId: String) : String
 
     fun commit(input: SvnCommitInput) : String
+
+    fun listenProduct()
 }

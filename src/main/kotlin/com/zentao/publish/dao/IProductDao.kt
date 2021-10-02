@@ -14,6 +14,4 @@ interface IProductDao {
     fun getAll():List<PubProduct>
 
     fun getById(id:String): PubProduct?
-
-    fun getProjects(productId: String): List<PubProject>
 }
