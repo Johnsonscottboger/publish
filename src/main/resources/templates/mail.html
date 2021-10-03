@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>产品发布通知</title>
+</head>
+<body>
+<p>你订阅的</p>
+<p>${productName} 发布新版本</p>
+<p>${productPublishPath}</p>
+
+<p>已转发到项目</p>
+<p>${projectName}</p>
+<p>版本号</p>
+<p>${projectVersion}</p>
+<p>下载地址</p><a href="${projectPublishPath}">${projectPublishPath}</a>
+<p>请尽快在禅道创建版本和测试单，并通知测试！</p>
+<a href="${zentaoAddress}">${zentaoAddress}</a>
+</body>
+</html>

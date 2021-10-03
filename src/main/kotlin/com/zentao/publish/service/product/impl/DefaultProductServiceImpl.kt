@@ -16,6 +16,11 @@ class DefaultProductServiceImpl : IProductService {
     private lateinit var _dao: IProductDao
 
     override fun create(product: Product): String {
+        val products = getAll()
+        if (products.any { p -> p.name == product.name })
+            throw IllegalArgumentException("产品已存在")
+        if (products.any { p -> p.publishPath!!.startsWith(product.publishPath!!.removeSuffix("/")) })
+            throw IllegalArgumentException("产品已存在")
         return map(product, PubProduct::class)?.run {
             id = UUID.randomUUID().toString()
             createTime = Date()
@@ -25,6 +30,11 @@ class DefaultProductServiceImpl : IProductService {
     }
 
     override fun update(product: Product) {
+        val products = getAll()
+        if (products.any { p -> p.id != product.id && p.name == product.name })
+            throw IllegalArgumentException("产品已存在")
+        if (products.any { p -> p.id != product.id && p.publishPath!!.startsWith(product.publishPath!!.removeSuffix("/")) })
+            throw IllegalArgumentException("产品已存在")
         map(product, PubProduct::class)?.run {
             modifyTime = Date()
             _dao.update(this)

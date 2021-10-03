@@ -5,9 +5,12 @@ import com.zentao.publish.dao.IProjectDao
 import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.dao.IUserDao
 import com.zentao.publish.extensions.splitRemoveEmpty
+import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.service.svn.ISvnService
+import com.zentao.publish.viewmodel.MailSendInfo
 import com.zentao.publish.viewmodel.SvnCommitInput
 import com.zentao.publish.viewmodel.SvnList
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.io.File
@@ -36,6 +39,9 @@ class DefaultSvnServiceImpl : ISvnService {
 
     @Resource
     private lateinit var _subscribeDao: ISubscribeDao
+
+    @Autowired
+    private lateinit var _mailService: IMailService
 
     override fun list(projectId: String): List<SvnList> {
         val project = _projectDao.getById(projectId) ?: return emptyList()
@@ -123,7 +129,7 @@ class DefaultSvnServiceImpl : ISvnService {
 
         val path = Path(System.getenv("appdata"), "publish", "project", project.name!!, version)
 
-        val addOutput = exec("svn add \"${path}\" --force")
+        exec("svn add \"${path}\" --force")
         val output =
             exec("svn commit -m \"Commit\" \"${path}\" --username ${user.username} --password ${user.password}")
         return output.joinToString("\r\n")
@@ -136,42 +142,58 @@ class DefaultSvnServiceImpl : ISvnService {
         val projectList = _projectDao.getAll()
         val subscribeList = _subscribeDao.getAll()
 
-        for (product in productList) {
-            val subscribes = subscribeList.filter { p -> p.productId == product.id }
-            for (subscribe in subscribes) {
-                val project = projectList.find { p -> p.id == subscribe.projectId } ?: continue
-                val user = userList.find { p -> p.id == project.userId } ?: continue
-                val publishPath = "${product.publishPath}/${subscribe.productSubPath}"
-                val list =
-                    exec("svn list \"${publishPath}\" --verbose --username ${user.username} --password ${user.password}").drop(
-                        1
-                    ).map { p ->
-                        val split = p.splitRemoveEmpty(" ")
-                        SvnList(split[0], split[1], split[6].removeSuffix("/"))
-                    }
-
-                val lastVersion = list.maxByOrNull { p -> p.revision.toInt() } ?: continue
-
-                val currentVersion = subscribe.lastProductVersion
-                if (currentVersion == null || lastVersion.entryName != currentVersion) {
-                    val path =
-                        Path(System.getenv("appdata"), "publish", "product", product.name!!, lastVersion.entryName)
-                    if (!path.toFile().exists()) {
-                        if (path.parent.exists()) {
-                            exec("svn update \"${path.parent}\" --username ${user.username} --password ${user.password}")
-                        } else {
-                            exec("svn checkout \"${publishPath}\" \"${path.parent}\" --username ${user.username} --password ${user.password}")
+        try {
+            for (product in productList) {
+                val subscribes = subscribeList.filter { p -> p.productId == product.id }
+                for (subscribe in subscribes) {
+                    val project = projectList.find { p -> p.id == subscribe.projectId } ?: continue
+                    val user = userList.find { p -> p.id == project.userId } ?: continue
+                    val publishPath = "${product.publishPath}/${subscribe.productSubPath}"
+                    val list =
+                        exec("svn list \"${publishPath}\" --verbose --username ${user.username} --password ${user.password}").drop(
+                            1
+                        ).map { p ->
+                            val split = p.splitRemoveEmpty(" ")
+                            SvnList(split[0], split[1], split[6].removeSuffix("/"))
                         }
-                    }
 
-                    val projectVersion = create(project.id!!)
-                    path.copyTo(Path(projectVersion, lastVersion.entryName), true)
-                    commit(SvnCommitInput(project.id!!, Path(projectVersion).name))
-                    subscribe.lastProductVersion = lastVersion.entryName
-                    subscribe.lastProductTime = Date()
-                    _subscribeDao.update(subscribe)
+                    val lastVersion = list.maxByOrNull { p -> p.revision.toInt() } ?: continue
+
+                    val currentVersion = subscribe.lastProductVersion
+                    if (currentVersion == null || lastVersion.entryName != currentVersion) {
+                        val path =
+                            Path(System.getenv("appdata"), "publish", "product", product.name!!, lastVersion.entryName)
+                        if (!path.toFile().exists()) {
+                            if (path.parent.exists()) {
+                                exec("svn update \"${path.parent}\" --username ${user.username} --password ${user.password}")
+                            } else {
+                                exec("svn checkout \"${publishPath}\" \"${path.parent}\" --username ${user.username} --password ${user.password}")
+                            }
+                        }
+
+                        val projectVersion = create(project.id!!)
+                        path.copyTo(Path(projectVersion, lastVersion.entryName), true)
+                        commit(SvnCommitInput(project.id!!, Path(projectVersion).name))
+                        subscribe.lastProductVersion = lastVersion.entryName
+                        subscribe.lastProductTime = Date()
+                        _subscribeDao.update(subscribe)
+
+                        _mailService.send(
+                            user.email!!, MailSendInfo(
+                                productName = product.name!!,
+                                productPublishPath = "${publishPath}/${lastVersion.entryName}",
+                                projectName = project.name!!,
+                                projectVersion = Path(projectVersion).name,
+                                projectPublishPath = "${project.publishPath!!.removeSuffix("/")}/${Path(projectVersion).name}",
+                                zentaoAddress = "http://zentao.wuhanins.com:88/zentao/my/",
+                                description = ""
+                            )
+                        )
+                    }
                 }
             }
+        } catch (error: Throwable) {
+            _mailService.errorReport(error.message!!, error)
         }
     }
 

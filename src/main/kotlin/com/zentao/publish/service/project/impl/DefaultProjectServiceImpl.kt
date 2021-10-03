@@ -9,12 +9,17 @@ import java.util.*
 import javax.annotation.Resource
 
 @Service
-class DefaultProjectServiceImpl : IProjectService{
+class DefaultProjectServiceImpl : IProjectService {
 
     @Resource
-    private lateinit var _dao : IProjectDao
+    private lateinit var _dao: IProjectDao
 
-    override fun create(project: Project) : String {
+    override fun create(project: Project): String {
+        val projects = getAll()
+        if (projects.any { p -> p.name == project.name })
+            throw IllegalArgumentException("项目已存在")
+        if (projects.any { p -> p.publishPath!!.startsWith(project.publishPath!!.removeSuffix("/")) })
+            throw IllegalArgumentException("项目已存在")
         return map(project, PubProject::class)?.run {
             id = UUID.randomUUID().toString()
             createTime = Date()
@@ -24,6 +29,11 @@ class DefaultProjectServiceImpl : IProjectService{
     }
 
     override fun update(project: Project) {
+        val projects = getAll()
+        if (projects.any { p -> p.id != project.id && p.name == project.name })
+            throw IllegalArgumentException("项目已存在")
+        if (projects.any { p -> p.id != project.id && p.publishPath!!.startsWith(project.publishPath!!.removeSuffix("/")) })
+            throw IllegalArgumentException("项目已存在")
         map(project, PubProject::class)?.run {
             modifyTime = Date()
             _dao.update(this)

@@ -15,6 +15,9 @@ class DefaultSubscribeServiceImpl : ISubscribeService {
     private lateinit var _dao: ISubscribeDao
 
     override fun create(subscribe: Subscribe): String {
+        val subscribes = getAll()
+        if (subscribes.any { p -> p.productId == subscribe.productId && p.projectId == subscribe.projectId })
+            throw IllegalArgumentException("订阅已存在")
         return map(subscribe, PubSubscribe::class)?.run {
             id = UUID.randomUUID().toString()
             createTime = Date()
@@ -24,6 +27,9 @@ class DefaultSubscribeServiceImpl : ISubscribeService {
     }
 
     override fun update(subscribe: Subscribe) {
+        val subscribes = getAll()
+        if (subscribes.any { p -> p.id != subscribe.id && p.productId == subscribe.productId && p.projectId == subscribe.projectId })
+            throw IllegalArgumentException("订阅已存在")
         map(subscribe, PubSubscribe::class)?.run {
             modifyTime = Date()
             _dao.update(this)
