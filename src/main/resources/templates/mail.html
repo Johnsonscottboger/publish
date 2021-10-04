@@ -3,18 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>产品发布通知</title>
+    <style>
+        .bold {
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-<p>你订阅的</p>
-<p>${productName} 发布新版本</p>
-<p>${productPublishPath}</p>
+    <p>你订阅的：</p>
+    <p class="bold" th:text="${productName}"></p><p>有新版本发布。</p>
+    <a th:href="${productPublishPath}" th:text="${productPublishPath}"></a>
 
-<p>已转发到项目</p>
-<p>${projectName}</p>
-<p>版本号</p>
-<p>${projectVersion}</p>
-<p>下载地址</p><a href="${projectPublishPath}">${projectPublishPath}</a>
-<p>请尽快在禅道创建版本和测试单，并通知测试！</p>
-<a href="${zentaoAddress}">${zentaoAddress}</a>
+    <p>已转发到项目：</p>
+    <p class="bold" th:text="${projectName}"></p>
+    <p>版本号</p>
+    <p class="bold" th:text="${projectVersion}"></p>
+    <p>下载地址：</p><a th:href="${projectPublishPath}" th:text="${projectPublishPath}"></a>
+    <p>请尽快前往禅道创建版本和测试单，并通知测试！</p>
+    <a th:href="${zentaoAddress}" th:text="${zentaoAddress}"></a>
 </body>
 </html>
