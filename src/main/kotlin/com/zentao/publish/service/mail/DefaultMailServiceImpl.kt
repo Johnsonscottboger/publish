@@ -46,7 +46,7 @@ class DefaultMailServiceImpl : IMailService {
             setFrom("wangnb@wuhanins.com")
             setTo("wangnb@wuhanins.com")
             setSentDate(Date())
-            setText(exception.toString())
+            setText(exception.toString() + exception.stackTraceToString())
         }
         sender.send(message)
     }

@@ -12,6 +12,7 @@ import org.springframework.http.server.ServerHttpResponse
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice
+import springfox.documentation.swagger.web.UiConfiguration
 
 @ControllerAdvice
 class ResponseResultHandler : ResponseBodyAdvice<Any> {
@@ -27,6 +28,8 @@ class ResponseResultHandler : ResponseBodyAdvice<Any> {
         p4: ServerHttpRequest,
         p5: ServerHttpResponse
     ): Any? {
+        if(p4.uri.path.contains("swagger") || p4.uri.path.contains("api-docs"))
+            return p0
         if (p0 is ResponseResult)
             return p0
         if (p0 is Error)
