@@ -3,6 +3,7 @@ package com.zentao.publish.service.user.impl
 import com.zentao.publish.dao.IUserDao
 import com.zentao.publish.entity.PubUser
 import com.zentao.publish.service.user.IUserService
+import com.zentao.publish.util.Encrypt
 import com.zentao.publish.viewmodel.User
 import org.springframework.stereotype.Service
 import java.util.*
@@ -18,6 +19,7 @@ class DefaultUserServiceImpl : IUserService {
         val entity = map(user, PubUser::class) ?: throw TypeCastException()
         entity.id = UUID.randomUUID().toString()
         entity.createTime = Date()
+        entity.password = Encrypt.encrypt(entity.password!!)
         _dao.create(entity)
         return entity.id!!
     }
@@ -25,6 +27,7 @@ class DefaultUserServiceImpl : IUserService {
     override fun update(user: User) {
         val entity = map(user, PubUser::class) ?: throw TypeCastException()
         entity.modifyTime = Date()
+        entity.password = Encrypt.encrypt(entity.password!!)
         _dao.update(entity)
     }
 

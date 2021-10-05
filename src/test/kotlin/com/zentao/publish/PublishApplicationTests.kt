@@ -8,6 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.security.Key
+import java.security.SecureRandom
+import java.util.*
+import javax.crypto.Cipher
+import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.DESKeySpec
 
 @SpringBootTest
 class PublishApplicationTests {
@@ -43,5 +50,16 @@ class PublishApplicationTests {
                 doc.write(output)
             }
         }
+    }
+
+    @Test
+    fun encrypt() {
+        val content = "123456"
+
+        val encrypt = Base64.getEncoder().encodeToString(content.toByteArray())
+
+        val decrypt = String(Base64.getDecoder().decode(encrypt))
+
+        assert(content == decrypt)
     }
 }

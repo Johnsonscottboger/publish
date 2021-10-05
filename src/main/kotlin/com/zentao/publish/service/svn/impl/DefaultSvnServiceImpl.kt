@@ -7,6 +7,7 @@ import com.zentao.publish.dao.IUserDao
 import com.zentao.publish.extensions.splitRemoveEmpty
 import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.service.svn.ISvnService
+import com.zentao.publish.util.Encrypt
 import com.zentao.publish.viewmodel.MailSendInfo
 import com.zentao.publish.viewmodel.SvnCommitInput
 import com.zentao.publish.viewmodel.SvnList
@@ -55,7 +56,7 @@ class DefaultSvnServiceImpl : ISvnService {
         val user = _userDao.getById(project.userId!!) ?: return emptyList()
 
         val output =
-            exec("svn list \"${project.publishPath!!}\" --verbose --username ${user.username} --password ${user.password}")
+            exec("svn list \"${project.publishPath!!}\" --verbose --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
 
         return output.drop(1).map { p ->
             val split = p.splitRemoveEmpty(" ")
@@ -113,13 +114,13 @@ class DefaultSvnServiceImpl : ISvnService {
         val version = version(projectId)
         val publishPath = "${project.publishPath!!}/${version}"
         val output =
-            exec("svn mkdir -m \"Making a dir\" \"${publishPath}\" --username ${user.username} --password ${user.password}")
+            exec("svn mkdir -m \"Making a dir\" \"${publishPath}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
 
         if (output.any { p -> p.startsWith("Committed") }) {
             //提交成功后检出到本地目录
             val path = Path(System.getenv("appdata"), "publish", "project", project.name!!, version)
             val result =
-                exec("svn checkout \"${publishPath}\" \"${path}\" --username ${user.username} --password ${user.password}")
+                exec("svn checkout \"${publishPath}\" \"${path}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
             if (result.any { p -> p.startsWith("Checked") }) {
                 return path.toString()
             }
@@ -138,7 +139,7 @@ class DefaultSvnServiceImpl : ISvnService {
 
         exec("svn add \"${path}\" --force")
         val output =
-            exec("svn commit -m \"Commit\" \"${path}\" --username ${user.username} --password ${user.password}")
+            exec("svn commit -m \"Commit\" \"${path}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
         return output.joinToString("\r\n")
     }
 
@@ -163,7 +164,7 @@ class DefaultSvnServiceImpl : ISvnService {
                     val publishPath = "${product.publishPath}/${subscribe.productSubPath}"
                     log.info("\t订阅项目:${project.id} ${project.name}")
                     val list =
-                        exec("svn list \"${publishPath}\" --verbose --username ${user.username} --password ${user.password}").drop(
+                        exec("svn list \"${publishPath}\" --verbose --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}").drop(
                             1
                         ).map { p ->
                             val split = p.splitRemoveEmpty(" ")
@@ -181,9 +182,9 @@ class DefaultSvnServiceImpl : ISvnService {
                             Path(System.getenv("appdata"), "publish", "product", product.name!!, lastVersion.entryName)
                         if (!path.toFile().exists()) {
                             if (path.parent.exists()) {
-                                exec("svn update \"${path.parent}\" --username ${user.username} --password ${user.password}")
+                                exec("svn update \"${path.parent}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
                             } else {
-                                exec("svn checkout \"${publishPath}\" \"${path.parent}\" --username ${user.username} --password ${user.password}")
+                                exec("svn checkout \"${publishPath}\" \"${path.parent}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
                             }
                         }
 
