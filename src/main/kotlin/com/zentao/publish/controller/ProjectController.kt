@@ -2,6 +2,8 @@ package com.zentao.publish.controller
 
 import com.zentao.publish.service.project.IProjectService
 import com.zentao.publish.viewmodel.Project
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
@@ -12,6 +14,7 @@ import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.notExists
 
+@Api("项目管理服务")
 @Controller
 @RequestMapping("api/project")
 class ProjectController {
@@ -21,36 +24,42 @@ class ProjectController {
     private lateinit var _service: IProjectService
 
     @ResponseBody
+    @ApiOperation("创建项目")
     @PostMapping("/create", produces = ["application/json"])
     fun create(@RequestBody project: Project): String {
         return _service.create(project)
     }
 
     @ResponseBody
+    @ApiOperation("修改项目")
     @PostMapping("/update")
     fun update(@RequestBody project: Project) {
         _service.update(project)
     }
 
     @ResponseBody
+    @ApiOperation("删除项目")
     @PostMapping("/delete")
     fun delete(@RequestBody id: String) {
         _service.delete(id)
     }
 
     @ResponseBody
+    @ApiOperation("查询项目")
     @GetMapping("/{id}")
     fun get(@PathVariable id: String): Project? {
         return _service.getById(id)
     }
 
     @ResponseBody
+    @ApiOperation("查询用户所属项目")
     @GetMapping("/user/{userId}")
     fun getByUserId(@PathVariable userId: String): List<Project> {
         return _service.getByUserId(userId)
     }
 
     @ResponseBody
+    @ApiOperation("上传部署控制表模板")
     @PostMapping("/upload/{projectId}", produces = ["application/json"])
     fun upload(@PathVariable projectId: String, @RequestParam file: MultipartFile): String {
         if (file.isEmpty)

@@ -1,6 +1,6 @@
 package com.zentao.publish.config
 
-import com.github.xiaoymin.swaggerbootstrapui.annotations.EnableSwaggerBootstrapUI
+import com.github.xiaoymin.knife4j.spring.annotations.EnableKnife4j
 import io.swagger.annotations.ApiOperation
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -10,16 +10,16 @@ import springfox.documentation.builders.RequestHandlerSelectors
 import springfox.documentation.service.Contact
 import springfox.documentation.spi.DocumentationType
 import springfox.documentation.spring.web.plugins.Docket
-import springfox.documentation.swagger2.annotations.EnableSwagger2
+import springfox.documentation.swagger2.annotations.EnableSwagger2WebMvc
 
 @Configuration
-@EnableSwagger2
-@EnableSwaggerBootstrapUI
+@EnableSwagger2WebMvc
 class SwaggerConfig {
 
     @Bean
     fun createRestApi(): Docket {
         return Docket(DocumentationType.SWAGGER_2)
+            .groupName("产品发布服务")
             .pathMapping("/")
             .apiInfo(
                 ApiInfoBuilder()

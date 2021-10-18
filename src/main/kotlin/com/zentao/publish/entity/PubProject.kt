@@ -9,5 +9,5 @@ data class PubProject(
         var publishPath: String? = null,
         var versionNameRule: String? = null,
         var createTime: Date? = null,
-        var modifyTime: Date? = null,
+        var modifyTime: Date? = null
 )

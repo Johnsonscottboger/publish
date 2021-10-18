@@ -1,6 +1,6 @@
 package com.zentao.publish.extensions
 
-fun String.splitRemoveEmpty(vararg delimiters: String, ignoreCase: Boolean = false, limit: Int = 0) : List<String> {
-    val result = this.split(delimiters = delimiters, ignoreCase, limit)
+fun String.splitRemoveEmpty(vararg delimiters: String) : List<String> {
+    val result = this.split(*delimiters)
     return result.filter { p -> p.isNotBlank() }
 }

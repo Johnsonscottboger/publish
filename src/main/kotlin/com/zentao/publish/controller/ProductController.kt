@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.*
 
-@Api("产品服务")
+@Api("产品管理服务")
 @Controller
 @RequestMapping("api/product")
 class ProductController {
@@ -20,28 +20,28 @@ class ProductController {
     private lateinit var _service : IProductService
 
     @ResponseBody
-    @ApiOperation("创建")
+    @ApiOperation("创建产品")
     @PostMapping("/create", produces = ["application/json"])
     fun create(@RequestBody product: Product) : String {
         return _service.create(product)
     }
 
     @ResponseBody
-    @ApiOperation("更新")
+    @ApiOperation("修改产品")
     @PostMapping("/update")
     fun update(@RequestBody product: Product) {
         _service.update(product)
     }
 
     @ResponseBody
-    @ApiOperation("删除")
+    @ApiOperation("删除产品")
     @PostMapping("/delete")
     fun delete(@RequestBody id: String) {
         _service.delete(id)
     }
 
     @ResponseBody
-    @ApiOperation("查询")
+    @ApiOperation("查询产品")
     @GetMapping("/{id}")
     fun get(@PathVariable id: String) : Product? {
         return _service.getById(id)

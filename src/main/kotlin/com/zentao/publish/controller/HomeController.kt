@@ -9,17 +9,17 @@ import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.RestController
 import java.lang.IllegalArgumentException
 import java.util.*
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
-@Api("主页")
 @RestController
 class HomeController {
 
-    @ResponseBody
-    @ApiOperation("主页")
-    @GetMapping("/", produces = ["application/json"])
-    fun index() : String {
+
+    @GetMapping("/")
+    fun index(response: HttpServletResponse)  {
         log.info("Application Running...")
-        return "index"
+        response.sendRedirect("/doc.html")
     }
 
     private val log = LoggerFactory.getLogger(this::class.java)
