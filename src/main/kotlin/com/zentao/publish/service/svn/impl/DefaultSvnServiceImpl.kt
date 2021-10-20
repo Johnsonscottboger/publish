@@ -14,6 +14,7 @@ import com.zentao.publish.viewmodel.SvnList
 import org.apache.poi.hwpf.HWPFDocument
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.io.File
@@ -50,6 +51,9 @@ class DefaultSvnServiceImpl : ISvnService {
 
     @Autowired
     private lateinit var _mailService: IMailService
+
+    @Value("\${publispath}")
+    private lateinit var _appdata: String
 
     override fun list(projectId: String): List<SvnList> {
         val project = _projectDao.getById(projectId) ?: return emptyList()
@@ -118,7 +122,7 @@ class DefaultSvnServiceImpl : ISvnService {
 
         if (output.any { p -> p.startsWith("Committed") }) {
             //提交成功后检出到本地目录
-            val path = Path(System.getenv("appdata"), "publish", "project", project.name!!, version)
+            val path = Path(this._appdata, "publish", "project", project.name!!, version)
             val result =
                 exec("svn checkout \"${publishPath}\" \"${path}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
             if (result.any { p -> p.startsWith("Checked") }) {
@@ -135,7 +139,7 @@ class DefaultSvnServiceImpl : ISvnService {
             list(input.projectId).maxByOrNull { p -> p.revision.toInt() }?.entryName
         } ?: throw NullPointerException()
 
-        val path = Path(System.getenv("appdata"), "publish", "project", project.name!!, version)
+        val path = Path(this._appdata, "publish", "project", project.name!!, version)
 
         exec("svn add \"${path}\" --force")
         val output =
@@ -179,11 +183,12 @@ class DefaultSvnServiceImpl : ISvnService {
                     if (currentVersion == null || lastVersion.entryName != currentVersion) {
                         log.info("当前项目需要更新")
                         val path =
-                            Path(System.getenv("appdata"), "publish", "product", product.name!!, lastVersion.entryName)
+                            Path(this._appdata, "publish", "product", product.name!!, lastVersion.entryName)
                         if (!path.toFile().exists()) {
                             if (path.parent.exists()) {
                                 exec("svn update \"${path.parent}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
                             } else {
+                                log.info("\t首次更新产品, 正在努力检出...")
                                 exec("svn checkout \"${publishPath}\" \"${path.parent}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
                             }
                         }

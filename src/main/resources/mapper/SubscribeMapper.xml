@@ -17,11 +17,13 @@
                                    product_id,
                                    project_id,
                                    product_sub_path,
+                                   last_product_version,
                                    create_time)
         values (#{id},
                 #{productId},
                 #{projectId},
                 #{productSubPath},
+                #{lastProductVersion},
                 #{createTime})
     </insert>
 

@@ -3,7 +3,9 @@ package com.zentao.publish.controller
 import com.zentao.publish.service.project.IProjectService
 import com.zentao.publish.viewmodel.Project
 import io.swagger.annotations.Api
+import io.swagger.annotations.ApiImplicitParam
 import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
@@ -59,9 +61,19 @@ class ProjectController {
     }
 
     @ResponseBody
+    @ApiOperation("所有项目")
+    @GetMapping("/all")
+    fun getAll() : List<Project> {
+        return _service.getAll()
+    }
+
+    @ResponseBody
     @ApiOperation("上传部署控制表模板")
     @PostMapping("/upload/{projectId}", produces = ["application/json"])
-    fun upload(@PathVariable projectId: String, @RequestParam file: MultipartFile): String {
+    fun upload(
+        @PathVariable @ApiParam("项目主键", required = true) projectId: String,
+        @RequestParam @ApiParam("上线部署控制表文件", required = true, example = "文档中预留{提测日期}、{提测版本}、{部署说明}插槽.")file: MultipartFile
+    ): String {
         if (file.isEmpty)
             throw IllegalArgumentException("file can not be empty")
         val fileName = file.originalFilename!!
@@ -70,7 +82,7 @@ class ProjectController {
         if (path.notExists())
             path.createDirectories()
         val dest = File(path.toString(), fileName)
-        if(dest.exists()) dest.delete()
+        if (dest.exists()) dest.delete()
         file.transferTo(dest)
         return "上传成功"
     }

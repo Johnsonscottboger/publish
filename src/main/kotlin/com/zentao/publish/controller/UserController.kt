@@ -44,6 +44,7 @@ class UserController {
     @ApiOperation("查询用户")
     @GetMapping("/{id}")
     fun get(@PathVariable id: String) : User? {
-        return _service.getById(id)
+        val user = _service.getById(id)
+        return user?.copy(password = "******")
     }
 }

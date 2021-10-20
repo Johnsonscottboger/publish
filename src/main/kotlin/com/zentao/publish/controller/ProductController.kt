@@ -5,6 +5,7 @@ import com.zentao.publish.viewmodel.Product
 import com.zentao.publish.viewmodel.Project
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
@@ -45,5 +46,12 @@ class ProductController {
     @GetMapping("/{id}")
     fun get(@PathVariable id: String) : Product? {
         return _service.getById(id)
+    }
+
+    @ResponseBody
+    @ApiOperation("所有产品")
+    @GetMapping("/all")
+    fun getAll() : List<Product> {
+        return _service.getAll()
     }
 }
