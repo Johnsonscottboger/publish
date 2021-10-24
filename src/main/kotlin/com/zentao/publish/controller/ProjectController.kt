@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
@@ -24,6 +25,9 @@ class ProjectController {
 
     @Autowired
     private lateinit var _service: IProjectService
+
+    @Value("\${publishpath}")
+    private lateinit var _appdata: String
 
     @ResponseBody
     @ApiOperation("创建项目")
@@ -78,7 +82,7 @@ class ProjectController {
             throw IllegalArgumentException("file can not be empty")
         val fileName = file.originalFilename!!
         val project = _service.getById(projectId) ?: throw IllegalArgumentException("找不到指定的项目")
-        val path = Path(System.getenv("appdata"), "publish", "project", project.name!!)
+        val path = Path(_appdata, "publish", "project", project.name!!)
         if (path.notExists())
             path.createDirectories()
         val dest = File(path.toString(), fileName)

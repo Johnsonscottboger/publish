@@ -52,7 +52,7 @@ class DefaultSvnServiceImpl : ISvnService {
     @Autowired
     private lateinit var _mailService: IMailService
 
-    @Value("\${publispath}")
+    @Value("\${publishpath}")
     private lateinit var _appdata: String
 
     override fun list(projectId: String): List<SvnList> {
