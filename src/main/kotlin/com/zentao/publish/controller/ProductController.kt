@@ -36,8 +36,8 @@ class ProductController {
 
     @ResponseBody
     @ApiOperation("删除产品")
-    @PostMapping("/delete")
-    fun delete(@RequestBody id: String) {
+    @PostMapping("/delete/{id}")
+    fun delete(@PathVariable id: String) {
         _service.delete(id)
     }
 

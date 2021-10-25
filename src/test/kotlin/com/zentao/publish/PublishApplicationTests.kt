@@ -22,7 +22,7 @@ class PublishApplicationTests {
     @Autowired
     private lateinit var _mailService: IMailService
 
-    @Test
+
     fun deployDoc() {
         val template = "C:\\Users\\Aning\\AppData\\Roaming\\publish\\project\\TB水电站绿色智能建造\\上线部署控制表.doc"
         FileInputStream(template).use { input ->

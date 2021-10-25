@@ -35,8 +35,8 @@ class UserController {
 
     @ResponseBody
     @ApiOperation("删除用户")
-    @PostMapping("delete")
-    fun delete(@RequestBody id: String) {
+    @PostMapping("delete/{id}")
+    fun delete(@PathVariable id: String) {
         _service.delete(id)
     }
 
@@ -46,5 +46,12 @@ class UserController {
     fun get(@PathVariable id: String) : User? {
         val user = _service.getById(id)
         return user?.copy(password = "******")
+    }
+
+    @ResponseBody
+    @ApiOperation("所有用户")
+    @GetMapping("/all")
+    fun getAll() : List<User> {
+        return _service.getAll()
     }
 }

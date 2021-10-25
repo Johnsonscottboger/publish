@@ -45,8 +45,8 @@ class ProjectController {
 
     @ResponseBody
     @ApiOperation("删除项目")
-    @PostMapping("/delete")
-    fun delete(@RequestBody id: String) {
+    @PostMapping("/delete/{id}")
+    fun delete(@PathVariable id: String) {
         _service.delete(id)
     }
 

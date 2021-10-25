@@ -7,8 +7,8 @@
         <result column="email" property="email" jdbcType="VARCHAR"/>
         <result column="username" property="username" jdbcType="VARCHAR"/>
         <result column="password" property="password" jdbcType="VARCHAR"/>
-        <result column="create_time" property="createTime" jdbcType="TIME"/>
-        <result column="modify_time" property="modifyTime" jdbcType="TIME"/>
+        <result column="create_time" property="createTime"/>
+        <result column="modify_time" property="modifyTime"/>
     </resultMap>
 
     <insert id="create" keyProperty="id" keyColumn="id">

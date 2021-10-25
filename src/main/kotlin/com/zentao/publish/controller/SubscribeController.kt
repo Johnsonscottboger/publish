@@ -35,29 +35,36 @@ class SubscribeController {
 
     @ResponseBody
     @ApiOperation("删除订阅")
-    @PostMapping("/delete")
-    fun delete(@RequestBody id: String) {
+    @PostMapping("/delete/{id}")
+    fun delete(@PathVariable id: String) {
         _service.delete(id)
     }
 
     @ResponseBody
     @ApiOperation("查询订阅")
     @GetMapping("/{id}")
-    fun get(@PathVariable id: String) : Subscribe? {
+    fun get(@PathVariable id: String): Subscribe? {
         return _service.getById(id)
     }
 
     @ResponseBody
     @ApiOperation("查询产品订阅")
     @GetMapping("/product/{productId}")
-    fun getByProduct(@PathVariable productId: String) : List<Subscribe> {
+    fun getByProduct(@PathVariable productId: String): List<Subscribe> {
         return _service.getByProduct(productId)
     }
 
     @ResponseBody
     @ApiOperation("查询项目订阅")
     @GetMapping("/project/{projectId}")
-    fun getByProject(@PathVariable projectId: String) : List<Subscribe> {
+    fun getByProject(@PathVariable projectId: String): List<Subscribe> {
         return _service.getByProject(projectId)
+    }
+
+    @ResponseBody
+    @ApiOperation("所有项目")
+    @GetMapping("/all")
+    fun getAll(): List<Subscribe> {
+        return _service.getAll()
     }
 }

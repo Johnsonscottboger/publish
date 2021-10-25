@@ -5,8 +5,8 @@
         <id column="id" property="id" jdbcType="CHAR"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="publish_path" property="publishPath" jdbcType="VARCHAR"/>
-        <result column="create_time" property="createTime" jdbcType="TIME"/>
-        <result column="modify_time" property="modifyTime" jdbcType="TIME"/>
+        <result column="create_time" property="createTime" />
+        <result column="modify_time" property="modifyTime"/>
     </resultMap>
 
     <insert id="create" keyProperty="id" keyColumn="id">
