@@ -7,7 +7,7 @@
         <result column="project_id" property="projectId" jdbcType="CHAR"/>
         <result column="product_sub_path" property="productSubPath" jdbcType="VARCHAR"/>
         <result column="last_product_version" property="lastProductVersion" jdbcType="VARCHAR"/>
-        <result column="last_product_time" property="lastProductTime" jdbcType="TIME"/>
+        <result column="last_product_time" property="lastProductTime"/>
         <result column="create_time" property="createTime"/>
         <result column="modify_time" property="modifyTime"/>
     </resultMap>

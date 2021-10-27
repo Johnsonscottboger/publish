@@ -27,6 +27,8 @@ class DefaultMailServiceImpl : IMailService {
             setVariable("projectVersion", info.projectVersion)
             setVariable("projectPublishPath", info.projectPublishPath)
             setVariable("zentaoAddress", info.zentaoAddress)
+            setVariable("publishDate", info.publishDate)
+            setVariable("description", info.description)
         }
         val text = templateEngine.process("mail.html", context)
         val message = sender.createMimeMessage()

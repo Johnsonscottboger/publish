@@ -62,7 +62,7 @@ class DefaultSvnServiceImpl : ISvnService {
         val output =
             exec("svn list \"${project.publishPath!!}\" --verbose --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
 
-        return output.drop(1).map { p ->
+        return output.drop(1).filter { p -> p.endsWith("/") }.map { p ->
             val split = p.splitRemoveEmpty(" ")
             SvnList(
                 split[0],
@@ -72,9 +72,13 @@ class DefaultSvnServiceImpl : ISvnService {
         }
     }
 
+    private fun last(projectId: String) : SvnList? {
+        return list(projectId).lastOrNull()
+    }
+
     override fun version(projectId: String): String {
         val project = _projectDao.getById(projectId) ?: throw NullPointerException()
-        val lastVersion = list(projectId).maxByOrNull { p -> p.revision.toInt() }
+        val lastVersion = last(projectId)
         var slotBlock = false
         var originIndex = -1
         val slotBuilder = StringBuilder()
@@ -136,7 +140,7 @@ class DefaultSvnServiceImpl : ISvnService {
         val project = _projectDao.getById(input.projectId) ?: throw  NullPointerException()
         val user = _userDao.getById(project.userId!!) ?: throw  NullPointerException()
         val version = if (!input.version.isNullOrEmpty()) input.version else {
-            list(input.projectId).maxByOrNull { p -> p.revision.toInt() }?.entryName
+            last(input.projectId)?.entryName
         } ?: throw NullPointerException()
 
         val path = Path(this._appdata, "publish", "project", project.name!!, version)
@@ -207,11 +211,12 @@ class DefaultSvnServiceImpl : ISvnService {
                             user.email!!, MailSendInfo(
                                 productName = product.name!!,
                                 productPublishPath = "${publishPath}/${lastVersion.entryName}",
+                                publishDate = SimpleDateFormat("yyyy/MM/dd HH:mm").format(Date()),
                                 projectName = project.name!!,
                                 projectVersion = Path(projectVersion).name,
                                 projectPublishPath = "${project.publishPath!!.removeSuffix("/")}/${Path(projectVersion).name}",
                                 zentaoAddress = "http://zentao.wuhanins.com:88/zentao/my/",
-                                description = ""
+                                description = "${product.name}产品更新: ${lastVersion.entryName}"
                             )
                         )
                         log.info("\t邮件已发送")

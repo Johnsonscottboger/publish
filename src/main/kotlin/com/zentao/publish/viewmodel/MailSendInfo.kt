@@ -3,6 +3,7 @@ package com.zentao.publish.viewmodel
 data class MailSendInfo(
     val productName: String,
     val productPublishPath: String,
+    val publishDate: String,
     val projectName: String,
     val projectVersion: String,
     val projectPublishPath: String,

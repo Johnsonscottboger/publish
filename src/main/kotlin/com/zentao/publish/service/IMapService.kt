@@ -12,7 +12,7 @@ interface IMapService {
         val oldClass = old::class
         val ctor = newClass.primaryConstructor ?: return null
         val parameters = ctor.parameters.map { p ->
-            val oldProp = oldClass.memberProperties.firstOrNull { o -> o.name == p.name } ?: return null
+            val oldProp = oldClass.memberProperties.firstOrNull { o -> o.name == p.name } ?: return@map null
             oldProp.call(old)
         }
         val new = ctor.call(*parameters.toTypedArray())
