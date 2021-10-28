@@ -176,7 +176,7 @@ class DefaultSvnServiceImpl : ISvnService {
                             1
                         ).map { p ->
                             val split = p.splitRemoveEmpty(" ")
-                            SvnList(split[0], split[1], split[6].removeSuffix("/"))
+                            SvnList(split[0], split[1], split.elementAtOrElse(6) { "" }.removeSuffix("/"))
                         }
 
                     val lastVersion = list.maxByOrNull { p -> p.revision.toInt() } ?: continue
