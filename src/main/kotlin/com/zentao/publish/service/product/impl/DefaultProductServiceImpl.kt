@@ -1,6 +1,7 @@
 package com.zentao.publish.service.product.impl
 
 import com.zentao.publish.dao.IProductDao
+import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.entity.PubProduct
 import com.zentao.publish.service.product.IProductService
 import com.zentao.publish.viewmodel.Product
@@ -14,6 +15,9 @@ class DefaultProductServiceImpl : IProductService {
 
     @Resource
     private lateinit var _dao: IProductDao
+
+    @Resource
+    private lateinit var _subscribeDao: ISubscribeDao
 
     override fun create(product: Product): String {
         val products = getAll()
@@ -43,6 +47,7 @@ class DefaultProductServiceImpl : IProductService {
 
     override fun delete(id: String) {
         _dao.delete(id)
+        _subscribeDao.deleteByProduct(id)
     }
 
     override fun getAll(): List<Product> {

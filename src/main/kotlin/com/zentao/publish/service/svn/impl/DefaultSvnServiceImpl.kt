@@ -84,34 +84,42 @@ class DefaultSvnServiceImpl : ISvnService {
         val slotBuilder = StringBuilder()
         val versionBuilder = StringBuilder()
 
-        project.versionNameRule!!.forEach { char ->
-            originIndex++
-            when (char) {
-                '{' -> {
-                    slotBlock = true
-                    originIndex--
-                }
-                '}' -> {
-                    slotBlock = false
-                    val slot = slotBuilder.toString()
-                    if (Pattern.matches("\\d+i", slot)) {
-                        if (lastVersion == null)
-                            versionBuilder.append("1".padStart(slot.length, '0'))
-                        else {
-                            val lastIndex = lastVersion.entryName.substring(originIndex - slot.length, originIndex)
-                            versionBuilder.append((lastIndex.toInt() + 1).toString().padStart(slot.length, '0'))
-                        }
-                    } else {
-                        val dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(slot))
-                        versionBuilder.append(dateTime)
+        try {
+            project.versionNameRule!!.forEach { char ->
+                originIndex++
+                when (char) {
+                    '{' -> {
+                        slotBlock = true
+                        originIndex--
                     }
-                    slotBuilder.clear()
-                    originIndex--
-                }
-                else -> {
-                    if (slotBlock) slotBuilder.append(char) else versionBuilder.append(char)
+                    '}' -> {
+                        slotBlock = false
+                        val slot = slotBuilder.toString()
+                        if (Pattern.matches("\\d*i", slot)) {
+                            if (lastVersion == null)
+                                versionBuilder.append("1".padStart(slot.length, '0'))
+                            else {
+                                //val lastIndex = lastVersion.entryName.substring(originIndex - slot.length, originIndex)
+                                val lastIndexResult = Regex("\\d+").find(lastVersion.entryName.removePrefix(versionBuilder.toString()))
+                                    ?: throw IllegalArgumentException("创建版本号失败, 找不到索引字段: $lastVersion")
+                                val lastIndex = lastIndexResult.value
+                                val i = lastIndex.toIntOrNull() ?: throw IllegalArgumentException("无法将索引字段转换为数字: $lastIndex")
+                                versionBuilder.append((lastIndex.toInt() + 1).toString().padStart(slot.length, '0'))
+                            }
+                        } else {
+                            val dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(slot))
+                            versionBuilder.append(dateTime)
+                        }
+                        slotBuilder.clear()
+                        originIndex--
+                    }
+                    else -> {
+                        if (slotBlock) slotBuilder.append(char) else versionBuilder.append(char)
+                    }
                 }
             }
+        } catch (ex: Exception) {
+            throw IllegalStateException("创建下一版本时异常: 项目: ${project.name}, 版本号规则:${project.versionNameRule}, 最新版本号: $lastVersion", ex)
         }
         return versionBuilder.toString()
     }
@@ -167,61 +175,88 @@ class DefaultSvnServiceImpl : ISvnService {
                 val subscribes = subscribeList.filter { p -> p.productId == product.id }
                 log.info("\t订阅数量:${subscribes.count()}")
                 for (subscribe in subscribes) {
-                    val project = projectList.find { p -> p.id == subscribe.projectId } ?: continue
-                    val user = userList.find { p -> p.id == project.userId } ?: continue
-                    val publishPath = "${product.publishPath}/${subscribe.productSubPath}"
-                    log.info("\t订阅项目:${project.id} ${project.name}")
-                    val list =
-                        exec("svn list \"${publishPath}\" --verbose --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}").drop(
-                            1
-                        ).map { p ->
-                            val split = p.splitRemoveEmpty(" ")
-                            SvnList(split[0], split[1], split.elementAtOrElse(6) { "" }.removeSuffix("/"))
-                        }
-
-                    val lastVersion = list.maxByOrNull { p -> p.revision.toInt() } ?: continue
-                    log.info("\t产品最新版本:${lastVersion.entryName}")
-
-                    val currentVersion = subscribe.lastProductVersion
-                    log.info("\t项目最新版本:${currentVersion}")
-                    if (currentVersion == null || lastVersion.entryName != currentVersion) {
-                        log.info("当前项目需要更新")
-                        val path =
-                            Path(this._appdata, "publish", "product", product.name!!, lastVersion.entryName)
-                        if (!path.toFile().exists()) {
-                            if (path.parent.exists()) {
-                                exec("svn update \"${path.parent}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
-                            } else {
-                                log.info("\t首次更新产品, 正在努力检出...")
-                                exec("svn checkout \"${publishPath}\" \"${path.parent}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
+                    try {
+                        val project = projectList.find { p -> p.id == subscribe.projectId } ?: continue
+                        val user = userList.find { p -> p.id == project.userId } ?: continue
+                        val publishPath = "${product.publishPath}/${subscribe.productSubPath}"
+                        log.info("\t订阅项目:${project.id} ${project.name}")
+                        val list =
+                            exec(
+                                "svn list \"${publishPath}\" --verbose --username ${user.username} --password ${
+                                    Encrypt.decrypt(
+                                        user.password!!
+                                    )
+                                }"
+                            ).drop(
+                                1
+                            ).map { p ->
+                                val split = p.splitRemoveEmpty(" ")
+                                SvnList(split[0], split[1], split.elementAtOrElse(6) { "" }.removeSuffix("/"))
                             }
-                        }
 
-                        val projectVersion = create(project.id!!)
-                        log.info("\t项目版本已创建:${Path(projectVersion).name}")
-                        path.copyTo(Path(projectVersion, lastVersion.entryName), true)
-                        createDeployDoc(projectVersion, product.name!!, lastVersion.entryName)
-                        commit(SvnCommitInput(project.id!!, Path(projectVersion).name))
-                        log.info("\t项目版本已提交:${Path(projectVersion).name}")
-                        subscribe.lastProductVersion = lastVersion.entryName
-                        subscribe.lastProductTime = Date()
-                        _subscribeDao.update(subscribe)
-                        log.info("\t准备发送邮件至:${user.email}")
-                        _mailService.send(
-                            user.email!!, MailSendInfo(
-                                productName = product.name!!,
-                                productPublishPath = "${publishPath}/${lastVersion.entryName}",
-                                publishDate = SimpleDateFormat("yyyy/MM/dd HH:mm").format(Date()),
-                                projectName = project.name!!,
-                                projectVersion = Path(projectVersion).name,
-                                projectPublishPath = "${project.publishPath!!.removeSuffix("/")}/${Path(projectVersion).name}",
-                                zentaoAddress = "http://zentao.wuhanins.com:88/zentao/my/",
-                                description = "${product.name}产品更新: ${lastVersion.entryName}"
+                        val lastVersion = list.maxByOrNull { p -> p.revision.toInt() } ?: continue
+                        log.info("\t产品最新版本:${lastVersion.entryName}")
+
+                        val currentVersion = subscribe.lastProductVersion
+                        log.info("\t项目最新版本:${currentVersion}")
+                        if (currentVersion == null || lastVersion.entryName != currentVersion) {
+                            log.info("当前项目需要更新")
+                            val path =
+                                Path(this._appdata, "publish", "product", product.name!!, lastVersion.entryName)
+                            if (!path.toFile().exists()) {
+                                if (path.parent.exists()) {
+                                    exec(
+                                        "svn update \"${path.parent}\" --username ${user.username} --password ${
+                                            Encrypt.decrypt(
+                                                user.password!!
+                                            )
+                                        }"
+                                    )
+                                } else {
+                                    log.info("\t首次更新产品, 正在努力检出...")
+                                    exec(
+                                        "svn checkout \"${publishPath}\" \"${path.parent}\" --username ${user.username} --password ${
+                                            Encrypt.decrypt(
+                                                user.password!!
+                                            )
+                                        }"
+                                    )
+                                }
+                            }
+
+                            val projectVersion = create(project.id!!)
+                            log.info("\t项目版本已创建:${Path(projectVersion).name}")
+                            path.copyTo(Path(projectVersion, lastVersion.entryName), true)
+                            createDeployDoc(projectVersion, product.name!!, lastVersion.entryName)
+                            commit(SvnCommitInput(project.id!!, Path(projectVersion).name))
+                            log.info("\t项目版本已提交:${Path(projectVersion).name}")
+                            subscribe.lastProductVersion = lastVersion.entryName
+                            subscribe.lastProductTime = Date()
+                            _subscribeDao.update(subscribe)
+                            log.info("\t准备发送邮件至:${user.email}")
+                            _mailService.send(
+                                user.email!!, MailSendInfo(
+                                    productName = product.name!!,
+                                    productPublishPath = "${publishPath}/${lastVersion.entryName}",
+                                    publishDate = SimpleDateFormat("yyyy/MM/dd HH:mm").format(Date()),
+                                    projectName = project.name!!,
+                                    projectVersion = Path(projectVersion).name,
+                                    projectPublishPath = "${project.publishPath!!.removeSuffix("/")}/${
+                                        Path(
+                                            projectVersion
+                                        ).name
+                                    }",
+                                    zentaoAddress = "http://zentao.wuhanins.com:88/zentao/my/",
+                                    description = "${product.name}产品更新: ${lastVersion.entryName}"
+                                )
                             )
-                        )
-                        log.info("\t邮件已发送")
-                    } else {
-                        log.info("\t当前项目不需要更新")
+                            log.info("\t邮件已发送")
+                        } else {
+                            log.info("\t当前项目不需要更新")
+                        }
+                    } catch (error: Throwable) {
+                        log.error("检查更新异常: $subscribe", error)
+                        _mailService.errorReport("订阅${subscribe}更新异常: " + error.message, error)
                     }
                 }
             }

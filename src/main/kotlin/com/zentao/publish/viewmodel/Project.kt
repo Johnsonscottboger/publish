@@ -29,5 +29,5 @@ data class Project(
     val modifyTime: Date? = null,
 
     @ApiModelProperty("订阅列表")
-    val subscribeList: List<Subscribe>?
+    val subscribeList: List<Subscribe>? = null
 )

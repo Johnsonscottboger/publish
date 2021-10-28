@@ -1,19 +1,33 @@
 package com.zentao.publish.service.project.impl
 
 import com.zentao.publish.dao.IProjectDao
+import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.entity.PubProject
+import com.zentao.publish.extensions.deleteRec
 import com.zentao.publish.service.project.IProjectService
 import com.zentao.publish.service.subscribe.ISubscribeService
 import com.zentao.publish.viewmodel.Project
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import java.io.File
 import java.util.*
 import javax.annotation.Resource
+import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.exists
 
 @Service
 class DefaultProjectServiceImpl : IProjectService {
 
+    @Value("\${publishpath}")
+    private lateinit var _appdata: String
+
     @Resource
     private lateinit var _dao: IProjectDao
+
+    @Resource
+    private lateinit var _subscribeDao: ISubscribeDao
 
     @Resource
     private lateinit var _subscribeService: ISubscribeService
@@ -48,6 +62,34 @@ class DefaultProjectServiceImpl : IProjectService {
             throw IllegalArgumentException("项目已存在")
         if (projects.any { p -> p.id != project.id && p.publishPath!!.startsWith(project.publishPath!!.removeSuffix("/")) })
             throw IllegalArgumentException("项目已存在")
+
+        //更新的时候如果修改了项目名称, 将上线部署控制表移动到新名称中
+        try {
+            val oldProject = projects.find { p -> p.id == project.id }
+            if (oldProject != null && oldProject.name != project.name) {
+                val oldProjectPath = Path(_appdata, "publish", "project", oldProject.name!!)
+                if (oldProjectPath.exists()) {
+                    val templateFile = if (File(oldProjectPath.toString(), "上线部署控制表.doc").exists()) {
+                        File(oldProjectPath.toString(), "上线部署控制表.doc")
+                    } else if (File(oldProjectPath.toString(), "上线部署控制表.docx").exists()) {
+                        File(oldProjectPath.toString(), "上线部署控制表.docx")
+                    } else {
+                        null
+                    }
+
+                    if (templateFile != null) {
+                        val newProjectPath = Path(_appdata, "publish", "project", project.name!!)
+                        if (!newProjectPath.exists()) newProjectPath.createDirectories()
+                        templateFile.copyTo(File(newProjectPath.toString(), templateFile.name), true)
+                    }
+                }
+
+                oldProjectPath.deleteRec()
+            }
+        } catch (error: Throwable) {
+
+        }
+
         map(project, PubProject::class)?.run {
             modifyTime = Date()
             _dao.update(this)
@@ -70,6 +112,7 @@ class DefaultProjectServiceImpl : IProjectService {
 
     override fun delete(id: String) {
         _dao.delete(id)
+        _subscribeDao.deleteByProject(id)
     }
 
     override fun getAll(): List<Project> {

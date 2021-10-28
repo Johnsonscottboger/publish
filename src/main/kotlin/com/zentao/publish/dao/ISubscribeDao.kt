@@ -1,6 +1,7 @@
 package com.zentao.publish.dao
 
 import com.zentao.publish.entity.PubSubscribe
+import com.zentao.publish.viewmodel.Project
 
 interface ISubscribeDao {
     fun create(entity: PubSubscribe)
@@ -16,4 +17,8 @@ interface ISubscribeDao {
     fun getByProduct(productId: String): List<PubSubscribe>
 
     fun getByProject(projectId: String): List<PubSubscribe>
+
+    fun deleteByProduct(productId: String)
+
+    fun deleteByProject(projectId: String)
 }

@@ -69,4 +69,16 @@
         where project_id = #{projectId}
         order by create_time
     </select>
+
+    <delete id="deleteByProduct">
+        delete
+        from pub_subscribe
+        where product_id = #{productId}
+    </delete>
+
+    <delete id="deleteByProject">
+        delete
+        from pub_subscribe
+        where project_id = #{projectId}
+    </delete>
 </mapper>

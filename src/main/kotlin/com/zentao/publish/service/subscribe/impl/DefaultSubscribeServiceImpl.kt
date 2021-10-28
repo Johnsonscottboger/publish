@@ -58,4 +58,12 @@ class DefaultSubscribeServiceImpl : ISubscribeService {
         val entities = _dao.getByProject(projectId)
         return map(entities, Subscribe::class)
     }
+
+    override fun deleteByProduct(productId: String) {
+        _dao.deleteByProduct(productId)
+    }
+
+    override fun deleteByProject(projectId: String) {
+        _dao.deleteByProject(projectId)
+    }
 }

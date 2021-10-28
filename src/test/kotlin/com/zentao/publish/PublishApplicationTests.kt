@@ -1,24 +1,39 @@
 package com.zentao.publish
 
+import com.zentao.publish.extensions.deleteRec
 import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.viewmodel.MailSendInfo
+import com.zentao.publish.viewmodel.Project
+import com.zentao.publish.viewmodel.SvnList
 import org.apache.poi.hwpf.HWPFDocument
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.security.Key
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.regex.Pattern
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.DESKeySpec
+import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.exists
 
 @SpringBootTest
 class PublishApplicationTests {
+
+    @Value("\${publishpath}")
+    private lateinit var _appdata: String
 
     @Autowired
     private lateinit var _mailService: IMailService
@@ -62,5 +77,83 @@ class PublishApplicationTests {
         val decrypt = String(Base64.getDecoder().decode(encrypt))
 
         assert(content == decrypt)
+    }
+
+    @Test
+    fun version() {
+
+        val lastVersion = SvnList(revision = "5918", userName = "yunfei", entryName = "1.01.037.211028")
+        var slotBlock = false
+        var originIndex = -1
+        val slotBuilder = StringBuilder()
+        val versionBuilder = StringBuilder()
+
+        try {
+            "1.01.{00i}.{yyMMdd}"!!.forEach { char ->
+                originIndex++
+                when (char) {
+                    '{' -> {
+                        slotBlock = true
+                        originIndex--
+                    }
+                    '}' -> {
+                        slotBlock = false
+                        val slot = slotBuilder.toString()
+                        if (Pattern.matches("\\d*i", slot)) {
+                            if (lastVersion == null)
+                                versionBuilder.append("1".padStart(slot.length, '0'))
+                            else {
+                                //val lastIndex = lastVersion.entryName.substring(originIndex - slot.length, originIndex)
+                                val lastIndexResult = Regex("\\d+").find(lastVersion.entryName.removePrefix(versionBuilder.toString()))
+                                    ?: throw IllegalArgumentException("创建版本号失败, 找不到索引字段")
+                                val lastIndex = lastIndexResult.value
+                                val i = lastIndex.toIntOrNull() ?: throw IllegalArgumentException("无法将索引字段转换为数字: ${lastIndex}")
+                                versionBuilder.append((i + 1).toString().padStart(slot.length, '0'))
+                            }
+                        } else {
+                            val dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(slot))
+                            versionBuilder.append(dateTime)
+                        }
+                        slotBuilder.clear()
+                        originIndex--
+                    }
+                    else -> {
+                        if (slotBlock) slotBuilder.append(char) else versionBuilder.append(char)
+                    }
+                }
+            }
+        } catch (ex: Exception) {
+            throw IllegalStateException("", ex)
+        }
+
+        println(versionBuilder.toString())
+
+    }
+
+    //@Test
+    fun projectUpdate() {
+
+        val project = Project(name = "TB水电站")
+        val oldProject = Project(name = "2020Z11 TB水电站绿色智能建造平台")
+
+        if (oldProject != null && oldProject.name != project.name) {
+            val oldProjectPath = Path(_appdata, "publish", "project", oldProject.name!!)
+            if (oldProjectPath.exists()) {
+                val templateFile = if (File(oldProjectPath.toString(), "上线部署控制表.doc").exists()) {
+                    File(oldProjectPath.toString(), "上线部署控制表.doc")
+                } else if (File(oldProjectPath.toString(), "上线部署控制表.docx").exists()) {
+                    File(oldProjectPath.toString(), "上线部署控制表.docx")
+                } else {
+                    null
+                }
+
+                if (templateFile != null) {
+                    val newProjectPath = Path(_appdata, "publish", "project", project.name!!)
+                    if (!newProjectPath.exists()) newProjectPath.createDirectories()
+                    templateFile.copyTo(File(newProjectPath.toString(), templateFile.name), true)
+                }
+            }
+            oldProjectPath.deleteRec()
+        }
     }
 }

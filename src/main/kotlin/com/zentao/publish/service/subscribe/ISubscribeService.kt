@@ -17,4 +17,8 @@ interface ISubscribeService : IMapService {
     fun getByProduct(productId: String): List<Subscribe>
 
     fun getByProject(projectId: String): List<Subscribe>
+
+    fun deleteByProduct(productId: String)
+
+    fun deleteByProject(projectId: String)
 }
