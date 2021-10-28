@@ -33,7 +33,8 @@ class DefaultProjectServiceImpl : IProjectService {
 
         project.subscribeList?.forEach { subscribe ->
             try {
-                _subscribeService.create(subscribe)
+                val entity = subscribe.copy(projectId = id)
+                _subscribeService.create(entity)
             } catch (ex: Exception) {
                 //ignore
             }

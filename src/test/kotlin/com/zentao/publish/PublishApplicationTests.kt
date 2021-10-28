@@ -23,7 +23,7 @@ class PublishApplicationTests {
     @Autowired
     private lateinit var _mailService: IMailService
 
-    @Test
+    //@Test
     fun send() {
         val info = MailSendInfo(
             productName = "2021D01 英思基础数据中台",
