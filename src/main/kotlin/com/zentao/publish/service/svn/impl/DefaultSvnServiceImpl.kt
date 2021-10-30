@@ -1,5 +1,6 @@
 package com.zentao.publish.service.svn.impl
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import com.zentao.publish.dao.IProductDao
 import com.zentao.publish.dao.IProjectDao
 import com.zentao.publish.dao.ISubscribeDao
@@ -60,7 +61,13 @@ class DefaultSvnServiceImpl : ISvnService {
         val user = _userDao.getById(project.userId!!) ?: return emptyList()
 
         val output =
-            exec("svn list \"${project.publishPath!!}\" --verbose --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
+            exec(
+                "svn list \"${project.publishPath!!}\" --verbose --username ${user.username} --password ${
+                    Encrypt.decrypt(
+                        user.password!!
+                    )
+                }"
+            )
 
         return output.drop(1).filter { p -> p.endsWith("/") }.map { p ->
             val split = p.splitRemoveEmpty(" ")
@@ -72,7 +79,7 @@ class DefaultSvnServiceImpl : ISvnService {
         }
     }
 
-    private fun last(projectId: String) : SvnList? {
+    private fun last(projectId: String): SvnList? {
         return list(projectId).lastOrNull()
     }
 
@@ -100,11 +107,13 @@ class DefaultSvnServiceImpl : ISvnService {
                                 versionBuilder.append("1".padStart(slot.length, '0'))
                             else {
                                 //val lastIndex = lastVersion.entryName.substring(originIndex - slot.length, originIndex)
-                                val lastIndexResult = Regex("\\d+").find(lastVersion.entryName.removePrefix(versionBuilder.toString()))
-                                    ?: throw IllegalArgumentException("创建版本号失败, 找不到索引字段: $lastVersion")
+                                val lastIndexResult =
+                                    Regex("\\d+").find(lastVersion.entryName.removePrefix(versionBuilder.toString()))
+                                        ?: throw IllegalArgumentException("创建版本号失败, 找不到索引字段: $lastVersion")
                                 val lastIndex = lastIndexResult.value
-                                val i = lastIndex.toIntOrNull() ?: throw IllegalArgumentException("无法将索引字段转换为数字: $lastIndex")
-                                versionBuilder.append((lastIndex.toInt() + 1).toString().padStart(slot.length, '0'))
+                                val i = lastIndex.toIntOrNull()
+                                    ?: throw IllegalArgumentException("无法将索引字段转换为数字: $lastIndex")
+                                versionBuilder.append((i + 1).toString().padStart(slot.length, '0'))
                             }
                         } else {
                             val dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(slot))
@@ -119,7 +128,10 @@ class DefaultSvnServiceImpl : ISvnService {
                 }
             }
         } catch (ex: Exception) {
-            throw IllegalStateException("创建下一版本时异常: 项目: ${project.name}, 版本号规则:${project.versionNameRule}, 最新版本号: $lastVersion", ex)
+            throw IllegalStateException(
+                "创建下一版本时异常: 项目: ${project.name}, 版本号规则:${project.versionNameRule}, 最新版本号: $lastVersion",
+                ex
+            )
         }
         return versionBuilder.toString()
     }
@@ -130,13 +142,25 @@ class DefaultSvnServiceImpl : ISvnService {
         val version = version(projectId)
         val publishPath = "${project.publishPath!!}/${version}"
         val output =
-            exec("svn mkdir -m \"Making a dir\" \"${publishPath}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
+            exec(
+                "svn mkdir -m \"Making a dir\" \"${publishPath}\" --username ${user.username} --password ${
+                    Encrypt.decrypt(
+                        user.password!!
+                    )
+                }"
+            )
 
         if (output.any { p -> p.startsWith("Committed") }) {
             //提交成功后检出到本地目录
             val path = Path(this._appdata, "publish", "project", project.name!!, version)
             val result =
-                exec("svn checkout \"${publishPath}\" \"${path}\" --username ${user.username} --password ${Encrypt.decrypt(user.password!!)}")
+                exec(
+                    "svn checkout \"${publishPath}\" \"${path}\" --username ${user.username} --password ${
+                        Encrypt.decrypt(
+                            user.password!!
+                        )
+                    }"
+                )
             if (result.any { p -> p.startsWith("Checked") }) {
                 return path.toString()
             }
@@ -199,7 +223,7 @@ class DefaultSvnServiceImpl : ISvnService {
 
                         val currentVersion = subscribe.lastProductVersion
                         log.info("\t项目最新版本:${currentVersion}")
-                        if (currentVersion == null || lastVersion.entryName != currentVersion) {
+                        if (checkNeedUpdate(lastVersion.entryName, currentVersion)) {
                             log.info("当前项目需要更新")
                             val path =
                                 Path(this._appdata, "publish", "product", product.name!!, lastVersion.entryName)
@@ -264,6 +288,8 @@ class DefaultSvnServiceImpl : ISvnService {
             log.error("检查更新异常", error)
             _mailService.errorReport(error.message!!, error)
             log.info("检查更新异常报告已发送")
+        } finally {
+            log.info("更新完毕")
         }
     }
 
@@ -303,5 +329,13 @@ class DefaultSvnServiceImpl : ISvnService {
                 doc.write(output)
             }
         }
+    }
+
+    private fun checkNeedUpdate(productVersion: String?, projectVersion: String?): Boolean {
+        if (projectVersion.isNullOrEmpty()) return true
+        if (productVersion.isNullOrEmpty()) return false
+        val productFile = File(productVersion).nameWithoutExtension
+        val projectFile = File(projectVersion).nameWithoutExtension
+        return productFile == projectFile
     }
 }
