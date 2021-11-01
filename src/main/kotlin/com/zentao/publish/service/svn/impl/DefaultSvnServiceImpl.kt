@@ -1,10 +1,10 @@
 package com.zentao.publish.service.svn.impl
 
-import com.sun.org.apache.xpath.internal.operations.Bool
 import com.zentao.publish.dao.IProductDao
 import com.zentao.publish.dao.IProjectDao
 import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.dao.IUserDao
+import com.zentao.publish.entity.PubUser
 import com.zentao.publish.extensions.splitRemoveEmpty
 import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.service.svn.ISvnService
@@ -223,7 +223,7 @@ class DefaultSvnServiceImpl : ISvnService {
 
                         val currentVersion = subscribe.lastProductVersion
                         log.info("\t项目最新版本:${currentVersion}")
-                        if (checkNeedUpdate(lastVersion.entryName, currentVersion)) {
+                        if (checkNeedUpdate(user, publishPath, lastVersion.entryName, currentVersion)) {
                             log.info("当前项目需要更新")
                             val path =
                                 Path(this._appdata, "publish", "product", product.name!!, lastVersion.entryName)
@@ -331,11 +331,32 @@ class DefaultSvnServiceImpl : ISvnService {
         }
     }
 
-    private fun checkNeedUpdate(productVersion: String?, projectVersion: String?): Boolean {
+    private fun checkNeedUpdate(
+        user: PubUser,
+        publishPath: String,
+        productVersion: String?,
+        projectVersion: String?
+    ): Boolean {
         if (projectVersion.isNullOrEmpty()) return true
         if (productVersion.isNullOrEmpty()) return false
         val productFile = File(productVersion).nameWithoutExtension
         val projectFile = File(projectVersion).nameWithoutExtension
-        return productFile == projectFile
+
+        //判断文件最新的日志是否为新增, 如果不是新增则不更新
+        val logs = exec(
+            "svn log -v \"${publishPath}/${productVersion}\" --username ${user.username} --password ${
+                Encrypt.decrypt(
+                    user.password!!
+                )
+            }"
+        )
+
+        if (logs.any()) {
+            val log = Regex("([AM]).*").find(logs.joinToString())
+            if (log != null && log.value.startsWith("M"))
+                return false
+        }
+
+        return productFile != projectFile
     }
 }
