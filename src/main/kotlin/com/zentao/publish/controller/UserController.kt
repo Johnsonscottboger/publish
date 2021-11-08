@@ -1,6 +1,8 @@
 package com.zentao.publish.controller
 
 import com.zentao.publish.service.user.IUserService
+import com.zentao.publish.condition.UserPageCondition
+import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.User
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -16,13 +18,13 @@ class UserController {
     private val log = LoggerFactory.getLogger(this::class.java)
 
     @Autowired
-    private lateinit var _service : IUserService
+    private lateinit var _service: IUserService
 
 
     @ResponseBody
     @ApiOperation("创建用户")
     @PostMapping("/create", produces = ["application/json"])
-    fun create(@RequestBody user: User) : String {
+    fun create(@RequestBody user: User): String {
         return _service.create(user)
     }
 
@@ -43,7 +45,7 @@ class UserController {
     @ResponseBody
     @ApiOperation("查询用户")
     @GetMapping("/{id}")
-    fun get(@PathVariable id: String) : User? {
+    fun get(@PathVariable id: String): User? {
         val user = _service.getById(id)
         return user?.copy(password = "******")
     }
@@ -51,7 +53,14 @@ class UserController {
     @ResponseBody
     @ApiOperation("所有用户")
     @GetMapping("/all")
-    fun getAll() : List<User> {
-        return _service.getAll()
+    fun getAll(): List<User> {
+        return _service.getAll().map { p -> p.copy(password = "******") }
+    }
+
+    @ResponseBody
+    @ApiOperation("分页查询")
+    @PostMapping("/page")
+    fun getPage(@RequestBody condition: UserPageCondition): PageResult<User> {
+        return _service.getPage(condition)
     }
 }

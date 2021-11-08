@@ -1,9 +1,13 @@
 package com.zentao.publish.service.user.impl
 
+import com.github.pagehelper.PageHelper
+import com.github.pagehelper.PageInfo
+import com.zentao.publish.condition.UserPageCondition
 import com.zentao.publish.dao.IUserDao
 import com.zentao.publish.entity.PubUser
 import com.zentao.publish.service.user.IUserService
 import com.zentao.publish.util.Encrypt
+import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.User
 import org.springframework.stereotype.Service
 import java.util.*
@@ -48,5 +52,12 @@ class DefaultUserServiceImpl : IUserService {
     override fun getByName(name: String): User? {
         val entity = _dao.getByName(name) ?: return null
         return map(entity, User::class) ?: throw TypeCastException()
+    }
+
+    override fun getPage(condition: UserPageCondition): PageResult<User> {
+        PageHelper.startPage<User>(condition.page.pageIndex + 1, condition.page.pageSize, true, true, false)
+        val entities = map(_dao.getPage(condition), User::class)
+        val pageInfo = PageInfo(entities)
+        return PageResult(pageInfo.total, pageInfo.list.map { p -> p.copy(password = "******") })
     }
 }

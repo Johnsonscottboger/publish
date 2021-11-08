@@ -1,6 +1,8 @@
 package com.zentao.publish.controller
 
+import com.zentao.publish.condition.ProductPageCondition
 import com.zentao.publish.service.product.IProductService
+import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.Product
 import com.zentao.publish.viewmodel.Project
 import io.swagger.annotations.Api
@@ -53,5 +55,12 @@ class ProductController {
     @GetMapping("/all")
     fun getAll() : List<Product> {
         return _service.getAll()
+    }
+
+    @ResponseBody
+    @ApiOperation("分页查询")
+    @PostMapping("/page")
+    fun getPage(condition: ProductPageCondition) : PageResult<Product> {
+        return _service.getPage(condition)
     }
 }

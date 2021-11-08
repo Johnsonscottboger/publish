@@ -1,6 +1,8 @@
 package com.zentao.publish.controller
 
+import com.zentao.publish.condition.ProjectPageCondition
 import com.zentao.publish.service.project.IProjectService
+import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.Project
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiImplicitParam
@@ -67,8 +69,15 @@ class ProjectController {
     @ResponseBody
     @ApiOperation("所有项目")
     @GetMapping("/all")
-    fun getAll() : List<Project> {
+    fun getAll(): List<Project> {
         return _service.getAll()
+    }
+
+    @ResponseBody
+    @ApiOperation("分页查询")
+    @PostMapping("/page")
+    fun getPage(condition: ProjectPageCondition): PageResult<Project> {
+        return _service.getPage(condition)
     }
 
     @ResponseBody
@@ -76,7 +85,11 @@ class ProjectController {
     @PostMapping("/upload/{projectId}", produces = ["application/json"])
     fun upload(
         @PathVariable @ApiParam("项目主键", required = true) projectId: String,
-        @RequestParam @ApiParam("上线部署控制表文件", required = true, example = "文档中预留{提测日期}、{提测版本}、{部署说明}插槽.")file: MultipartFile
+        @RequestParam @ApiParam(
+            "上线部署控制表文件",
+            required = true,
+            example = "文档中预留{提测日期}、{提测版本}、{部署说明}插槽."
+        ) file: MultipartFile
     ): String {
         if (file.isEmpty)
             throw IllegalArgumentException("file can not be empty")

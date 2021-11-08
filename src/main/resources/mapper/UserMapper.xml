@@ -49,4 +49,20 @@
         from pub_user
         where username = #{username}
     </select>
+
+    <select id="getPage" resultMap="userMap">
+        select *
+        from pub_user
+        <where>
+            <if test="null != name and name != ''">
+                and name like concat('%', #{name} '%')
+            </if>
+            <if test="null != email and email != ''">
+                and email like concat('%', #{email},'%')
+            </if>
+            <if test="null != username and username != ''">
+                and username like concat('%', #{username},'%')
+            </if>
+        </where>
+    </select>
 </mapper>

@@ -81,4 +81,19 @@
         from pub_subscribe
         where project_id = #{projectId}
     </delete>
+
+    <select id="getPage" resultMap="subscribeMap">
+        select * from pub_subscribe
+        <where>
+            <if test="null != productId and productId != ''">
+                and product_id = #{productId}
+            </if>
+            <if test="null != projectId and projectId != ''">
+                and project_id = #{projectId}
+            </if>
+            <if test="null != lastProductVersion and lastProductVersion != ''">
+                and last_product_version like concat('%', #{lastProductVersion}, '%')
+            </if>
+        </where>
+    </select>
 </mapper>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zentao.publish.dao.IHistoryDao">
+    <resultMap id="historyMap" type="com.zentao.publish.entity.PubHistory">
+        <id column="id" property="id" jdbcType="CHAR"/>
+        <result column="product_id" property="productId" jdbcType="CHAR"/>
+        <result column="project_id" property="projectId" jdbcType="CHAR"/>
+        <result column="product_version" property="productVersion" jdbcType="VARCHAR"/>
+        <result column="project_version" property="projectVersion" jdbcType="VARCHAR"/>
+        <result column="publish_time" property="publishTime"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <insert id="create" keyProperty="id" keyColumn="id">
+        insert into pub_history (id,
+                                 product_id,
+                                 project_id,
+                                 product_version,
+                                 project_version,
+                                 publish_time,
+                                 create_time)
+        values (#{id},
+                #{productId},
+                #{projectId},
+                #{productVersion},
+                #{projectVersion},
+                #{publishTime}
+                #{createTime})
+    </insert>
+
+    <update id="update">
+        update pub_history
+        set product_id      = #{productId},
+            project_id      = #{projectId},
+            product_version = #{productVersion},
+            project_version = #{projectVersion},
+            publish_time    = #{publishTime},
+            create_time     = #{createTime}
+        where id = #{id}
+    </update>
+
+    <delete id="delete">
+        delete
+        from pub_history
+        where id = #{id}
+    </delete>
+
+    <select id="getAll" resultMap="historyMap">
+        select *
+        from pub_history
+        order by create_time desc
+    </select>
+
+    <select id="getById" resultMap="historyMap">
+        select *
+        from pub_history
+        where id = #{id}
+    </select>
+
+    <select id="getByProduct" resultMap="historyMap">
+        select *
+        from pub_history
+        where product_id = #{productId}
+        order by create_time
+    </select>
+
+    <select id="getByProject" resultMap="historyMap">
+        select *
+        from pub_history
+        where project_id = #{projectId}
+        order by create_time
+    </select>
+
+    <select id="getPage" resultMap="historyMap">
+        select *
+        from pub_history
+        <where>
+            <if test="null != productId and productId != ''">
+                and product_id = #{productId}
+            </if>
+            <if test="null != projectId and projectId != ''">
+                and project_id = #{projectId}
+            </if>
+            <if test="null != productVersion and productVersion != ''">
+                and product_version like concat('%',#{productVersion}, '%')
+            </if>
+            <if test="null != projectVersion and projectVersion != ''">
+                and project_version like concat('%',#{projectVersion}, '%')
+            </if>
+            <if test="null != publishStartTime">
+                and publish_time >= #{publishStartTime}
+            </if>
+            <if test="null != publishEndTime">
+                and publish_time &lt; #{publishEndTime}
+            </if>
+        </where>
+        order by create_time
+    </select>
+</mapper>

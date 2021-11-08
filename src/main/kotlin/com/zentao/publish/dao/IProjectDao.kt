@@ -1,5 +1,6 @@
 package com.zentao.publish.dao
 
+import com.zentao.publish.condition.ProjectPageCondition
 import com.zentao.publish.entity.PubProject
 
 interface IProjectDao {
@@ -15,4 +16,6 @@ interface IProjectDao {
     fun getById(id: String): PubProject?
 
     fun getByUserId(userId: String): List<PubProject>
+
+    fun getPage(condition: ProjectPageCondition): List<PubProject>
 }

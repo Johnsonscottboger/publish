@@ -1,9 +1,7 @@
 package com.zentao.publish.service.svn.impl
 
-import com.zentao.publish.dao.IProductDao
-import com.zentao.publish.dao.IProjectDao
-import com.zentao.publish.dao.ISubscribeDao
-import com.zentao.publish.dao.IUserDao
+import com.zentao.publish.dao.*
+import com.zentao.publish.entity.PubHistory
 import com.zentao.publish.entity.PubUser
 import com.zentao.publish.extensions.splitRemoveEmpty
 import com.zentao.publish.service.mail.IMailService
@@ -49,6 +47,9 @@ class DefaultSvnServiceImpl : ISvnService {
 
     @Resource
     private lateinit var _subscribeDao: ISubscribeDao
+
+    @Resource
+    private lateinit var _historyDao: IHistoryDao
 
     @Autowired
     private lateinit var _mailService: IMailService
@@ -257,6 +258,15 @@ class DefaultSvnServiceImpl : ISvnService {
                             subscribe.lastProductVersion = lastVersion.entryName
                             subscribe.lastProductTime = Date()
                             _subscribeDao.update(subscribe)
+                            _historyDao.create(
+                                PubHistory(
+                                    productId = product.id,
+                                    projectId = project.id,
+                                    productVersion = lastVersion.entryName,
+                                    projectVersion = Path(projectVersion).name,
+                                    publishTime = Date()
+                                )
+                            )
                             log.info("\t准备发送邮件至:${user.email}")
                             _mailService.send(
                                 user.email!!, MailSendInfo(

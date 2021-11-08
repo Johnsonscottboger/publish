@@ -1,6 +1,8 @@
 package com.zentao.publish.controller
 
+import com.zentao.publish.condition.SubscribePageCondition
 import com.zentao.publish.service.subscribe.ISubscribeService
+import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.Subscribe
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -66,5 +68,12 @@ class SubscribeController {
     @GetMapping("/all")
     fun getAll(): List<Subscribe> {
         return _service.getAll()
+    }
+
+    @ResponseBody
+    @ApiOperation("分页查询")
+    @PostMapping("/page")
+    fun getPage(condition: SubscribePageCondition): PageResult<Subscribe> {
+        return _service.getPage(condition)
     }
 }

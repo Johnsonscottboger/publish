@@ -1,12 +1,17 @@
 package com.zentao.publish.service.project.impl
 
+import com.github.pagehelper.PageHelper
+import com.github.pagehelper.PageInfo
+import com.zentao.publish.condition.ProjectPageCondition
 import com.zentao.publish.dao.IProjectDao
 import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.entity.PubProject
 import com.zentao.publish.extensions.deleteRec
 import com.zentao.publish.service.project.IProjectService
 import com.zentao.publish.service.subscribe.ISubscribeService
+import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.Project
+import com.zentao.publish.viewmodel.User
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.File
@@ -130,5 +135,12 @@ class DefaultProjectServiceImpl : IProjectService {
         return _dao.getByUserId(userId).run {
             map(this, Project::class)
         }
+    }
+
+    override fun getPage(condition: ProjectPageCondition): PageResult<Project> {
+        PageHelper.startPage<User>(condition.page.pageIndex + 1, condition.page.pageSize, true, true, false)
+        val entities = map(_dao.getPage(condition), Project::class)
+        val pageInfo = PageInfo(entities)
+        return PageResult(pageInfo.total, pageInfo.list)
     }
 }

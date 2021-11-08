@@ -5,7 +5,7 @@
         <id column="id" property="id" jdbcType="CHAR"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="publish_path" property="publishPath" jdbcType="VARCHAR"/>
-        <result column="create_time" property="createTime" />
+        <result column="create_time" property="createTime"/>
         <result column="modify_time" property="modifyTime"/>
     </resultMap>
 
@@ -16,9 +16,9 @@
 
     <update id="update">
         update pub_product
-        set name              = #{name},
-            publish_path      = #{publishPath},
-            modify_time       =#{modifyTime}
+        set name         = #{name},
+            publish_path = #{publishPath},
+            modify_time  =#{modifyTime}
         where id = #{id}
     </update>
 
@@ -40,4 +40,12 @@
         where id = #{id}
     </select>
 
+    <select id="getPage" resultMap="productMap">
+        select * from pub_product
+        <where>
+            <if test="null != name and name != ''">
+                and name like concat('%', #{name},'%')
+            </if>
+        </where>
+    </select>
 </mapper>

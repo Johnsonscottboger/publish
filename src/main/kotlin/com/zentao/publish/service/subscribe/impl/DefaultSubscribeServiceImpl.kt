@@ -1,9 +1,14 @@
 package com.zentao.publish.service.subscribe.impl
 
+import com.github.pagehelper.PageHelper
+import com.github.pagehelper.PageInfo
+import com.zentao.publish.condition.SubscribePageCondition
 import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.entity.PubSubscribe
 import com.zentao.publish.service.subscribe.ISubscribeService
+import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.Subscribe
+import com.zentao.publish.viewmodel.User
 import org.springframework.stereotype.Service
 import java.util.*
 import javax.annotation.Resource
@@ -65,5 +70,12 @@ class DefaultSubscribeServiceImpl : ISubscribeService {
 
     override fun deleteByProject(projectId: String) {
         _dao.deleteByProject(projectId)
+    }
+
+    override fun getPage(condition: SubscribePageCondition): PageResult<Subscribe> {
+        PageHelper.startPage<User>(condition.page.pageIndex + 1, condition.page.pageSize, true, true, false)
+        val entities = map(_dao.getPage(condition), Subscribe::class)
+        val pageInfo = PageInfo(entities)
+        return PageResult(pageInfo.total, pageInfo.list)
     }
 }

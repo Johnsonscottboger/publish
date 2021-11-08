@@ -1,11 +1,16 @@
 package com.zentao.publish.service.product.impl
 
+import com.github.pagehelper.PageHelper
+import com.github.pagehelper.PageInfo
+import com.zentao.publish.condition.ProductPageCondition
 import com.zentao.publish.dao.IProductDao
 import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.entity.PubProduct
 import com.zentao.publish.service.product.IProductService
+import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.Product
 import com.zentao.publish.viewmodel.Project
+import com.zentao.publish.viewmodel.User
 import org.springframework.stereotype.Service
 import java.util.*
 import javax.annotation.Resource
@@ -57,5 +62,12 @@ class DefaultProductServiceImpl : IProductService {
 
     override fun getById(id: String): Product? {
         return map(_dao.getById(id), Product::class)
+    }
+
+    override fun getPage(condition: ProductPageCondition): PageResult<Product> {
+        PageHelper.startPage<User>(condition.page.pageIndex + 1, condition.page.pageSize, true, true, false)
+        val entities = map(_dao.getPage(condition), Product::class)
+        val pageInfo = PageInfo(entities)
+        return PageResult(pageInfo.total, pageInfo.list)
     }
 }

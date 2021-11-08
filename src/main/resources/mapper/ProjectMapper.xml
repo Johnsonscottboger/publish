@@ -50,4 +50,13 @@
         where user_id = #{userId}
         order by name
     </select>
+
+    <select id="getPage" resultMap="projectMap">
+        select * from pub_project
+        <where>
+            <if test="null != name and name != ''">
+                and name like concat('%', #{name}, '%')
+            </if>
+        </where>
+    </select>
 </mapper>
