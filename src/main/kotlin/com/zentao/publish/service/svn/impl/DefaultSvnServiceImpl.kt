@@ -1,8 +1,10 @@
 package com.zentao.publish.service.svn.impl
 
 import com.zentao.publish.condition.HistoryPageCondition
-import com.zentao.publish.dao.*
-import com.zentao.publish.entity.PubHistory
+import com.zentao.publish.dao.IProductDao
+import com.zentao.publish.dao.IProjectDao
+import com.zentao.publish.dao.ISubscribeDao
+import com.zentao.publish.dao.IUserDao
 import com.zentao.publish.entity.PubUser
 import com.zentao.publish.extensions.splitRemoveEmpty
 import com.zentao.publish.service.history.IHistoryService
@@ -238,7 +240,7 @@ class DefaultSvnServiceImpl : ISvnService {
                         ) {
                             log.info("当前项目需要更新")
                             val path =
-                                Path(this._appdata, "publish", "product", product.name!!, lastVersion.entryName)
+                                Path(this._appdata, "publish", "product", product.name!!, subscribe.productSubPath!!, lastVersion.entryName)
                             if (!path.toFile().exists()) {
                                 if (path.parent.exists()) {
                                     exec(
@@ -385,7 +387,7 @@ class DefaultSvnServiceImpl : ISvnService {
         //检查历史记录, 如果历史记录中已发布, 则不再更新
         val histories = _historyService.getPage(HistoryPageCondition(productId = productId, projectId = projectId))
         if (histories.data.any { p -> p.productVersion == productVersion })
-            return false;
+            return false
 
         return productFile != projectFile
     }
