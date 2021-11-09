@@ -1,12 +1,15 @@
 package com.zentao.publish.service.svn.impl
 
+import com.zentao.publish.condition.HistoryPageCondition
 import com.zentao.publish.dao.*
 import com.zentao.publish.entity.PubHistory
 import com.zentao.publish.entity.PubUser
 import com.zentao.publish.extensions.splitRemoveEmpty
+import com.zentao.publish.service.history.IHistoryService
 import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.service.svn.ISvnService
 import com.zentao.publish.util.Encrypt
+import com.zentao.publish.viewmodel.History
 import com.zentao.publish.viewmodel.MailSendInfo
 import com.zentao.publish.viewmodel.SvnCommitInput
 import com.zentao.publish.viewmodel.SvnList
@@ -49,7 +52,7 @@ class DefaultSvnServiceImpl : ISvnService {
     private lateinit var _subscribeDao: ISubscribeDao
 
     @Resource
-    private lateinit var _historyDao: IHistoryDao
+    private lateinit var _historyService: IHistoryService
 
     @Autowired
     private lateinit var _mailService: IMailService
@@ -224,7 +227,15 @@ class DefaultSvnServiceImpl : ISvnService {
 
                         val currentVersion = subscribe.lastProductVersion
                         log.info("\t项目最新版本:${currentVersion}")
-                        if (checkNeedUpdate(user, publishPath, lastVersion.entryName, currentVersion)) {
+                        if (checkNeedUpdate(
+                                user,
+                                publishPath,
+                                subscribe.productId!!,
+                                subscribe.projectId!!,
+                                lastVersion.entryName,
+                                currentVersion
+                            )
+                        ) {
                             log.info("当前项目需要更新")
                             val path =
                                 Path(this._appdata, "publish", "product", product.name!!, lastVersion.entryName)
@@ -258,13 +269,15 @@ class DefaultSvnServiceImpl : ISvnService {
                             subscribe.lastProductVersion = lastVersion.entryName
                             subscribe.lastProductTime = Date()
                             _subscribeDao.update(subscribe)
-                            _historyDao.create(
-                                PubHistory(
+                            _historyService.create(
+                                History(
+                                    id = UUID.randomUUID().toString(),
                                     productId = product.id,
                                     projectId = project.id,
                                     productVersion = lastVersion.entryName,
                                     projectVersion = Path(projectVersion).name,
-                                    publishTime = Date()
+                                    publishTime = Date(),
+                                    createTime = Date()
                                 )
                             )
                             log.info("\t准备发送邮件至:${user.email}")
@@ -344,6 +357,8 @@ class DefaultSvnServiceImpl : ISvnService {
     private fun checkNeedUpdate(
         user: PubUser,
         publishPath: String,
+        productId: String,
+        projectId: String,
         productVersion: String?,
         projectVersion: String?
     ): Boolean {
@@ -366,6 +381,11 @@ class DefaultSvnServiceImpl : ISvnService {
             if (log != null && log.value.startsWith("M"))
                 return false
         }
+
+        //检查历史记录, 如果历史记录中已发布, 则不再更新
+        val histories = _historyService.getPage(HistoryPageCondition(productId = productId, projectId = projectId))
+        if (histories.data.any { p -> p.productVersion == productVersion })
+            return false;
 
         return productFile != projectFile
     }

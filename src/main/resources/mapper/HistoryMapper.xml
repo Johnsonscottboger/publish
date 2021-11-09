@@ -24,7 +24,7 @@
                 #{projectId},
                 #{productVersion},
                 #{projectVersion},
-                #{publishTime}
+                #{publishTime},
                 #{createTime})
     </insert>
 

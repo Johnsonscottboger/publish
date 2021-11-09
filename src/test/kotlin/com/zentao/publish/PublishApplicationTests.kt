@@ -1,5 +1,7 @@
 package com.zentao.publish
 
+import com.zentao.publish.dao.IHistoryDao
+import com.zentao.publish.entity.PubHistory
 import com.zentao.publish.extensions.deleteRec
 import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.viewmodel.MailSendInfo
@@ -20,14 +22,12 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.regex.Pattern
+import javax.annotation.Resource
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.DESKeySpec
-import kotlin.io.path.Path
-import kotlin.io.path.createDirectories
-import kotlin.io.path.deleteIfExists
-import kotlin.io.path.exists
+import kotlin.io.path.*
 
 @SpringBootTest
 class PublishApplicationTests {
@@ -68,7 +68,7 @@ class PublishApplicationTests {
         }
     }
 
-    @Test
+    //@Test
     fun encrypt() {
         val content = "123456"
 
@@ -79,7 +79,7 @@ class PublishApplicationTests {
         assert(content == decrypt)
     }
 
-    @Test
+    //@Test
     fun version() {
 
         val lastVersion = SvnList(revision = "5918", userName = "yunfei", entryName = "1.01.037.211028")
@@ -155,5 +155,23 @@ class PublishApplicationTests {
             }
             oldProjectPath.deleteRec()
         }
+    }
+
+    @Resource
+    private lateinit var _historyDao: IHistoryDao
+
+    @Test
+    fun insertHistory() {
+        _historyDao.create(
+            PubHistory(
+                id = UUID.randomUUID().toString(),
+                productId = UUID.randomUUID().toString(),
+                projectId = UUID.randomUUID().toString(),
+                productVersion = "productVersion",
+                projectVersion = "projectVersion",
+                publishTime = Date(),
+                createTime = Date()
+            )
+        )
     }
 }
