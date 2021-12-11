@@ -5,13 +5,13 @@ import com.zentao.publish.viewmodel.SvnList
 
 interface ISvnService {
 
-    fun list(projectId: String) : List<SvnList>
+    fun list(projectId: String): List<SvnList>
 
-    fun version(projectId: String) : String
+    fun version(projectId: String): String
 
-    fun create(projectId: String) : String
+    fun create(projectId: String): String
 
-    fun commit(input: SvnCommitInput) : String
+    fun commit(input: SvnCommitInput): String
 
-    fun listenProduct()
+    fun exec(args: String): List<String>
 }

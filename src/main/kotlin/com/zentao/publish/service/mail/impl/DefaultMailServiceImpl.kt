@@ -1,5 +1,6 @@
-package com.zentao.publish.service.mail
+package com.zentao.publish.service.mail.impl
 
+import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.viewmodel.MailSendInfo
 import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender

@@ -2,6 +2,9 @@ package com.zentao.publish
 
 import com.zentao.publish.dao.IHistoryDao
 import com.zentao.publish.entity.PubHistory
+import com.zentao.publish.event.SvnUpdateEvent
+import com.zentao.publish.eventbus.IEventBus
+import com.zentao.publish.eventbus.IEventHandler
 import com.zentao.publish.extensions.deleteRec
 import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.viewmodel.MailSendInfo
@@ -160,7 +163,7 @@ class PublishApplicationTests {
     @Resource
     private lateinit var _historyDao: IHistoryDao
 
-    @Test
+    //@Test
     fun insertHistory() {
         _historyDao.create(
             PubHistory(
@@ -173,5 +176,23 @@ class PublishApplicationTests {
                 createTime = Date()
             )
         )
+    }
+
+    @Resource
+    private lateinit var eventBus: IEventBus
+
+    class SvnUpdateHandler : IEventHandler<SvnUpdateEvent> {
+        override fun handle(e: SvnUpdateEvent) {
+            TODO("Not yet implemented")
+        }
+    }
+
+    //@Test
+    fun eventBusTest() {
+        eventBus.subscribe(SvnUpdateHandler::class.java)
+
+        eventBus.unsubscribe(SvnUpdateHandler::class.java)
+
+        eventBus.subscribe(SvnUpdateHandler::class.java)
     }
 }

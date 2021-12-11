@@ -1,40 +1,21 @@
 package com.zentao.publish.service.svn.impl
 
-import com.zentao.publish.condition.HistoryPageCondition
-import com.zentao.publish.dao.IProductDao
 import com.zentao.publish.dao.IProjectDao
-import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.dao.IUserDao
-import com.zentao.publish.entity.PubUser
 import com.zentao.publish.extensions.splitRemoveEmpty
-import com.zentao.publish.service.history.IHistoryService
-import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.service.svn.ISvnService
 import com.zentao.publish.util.Encrypt
-import com.zentao.publish.viewmodel.History
-import com.zentao.publish.viewmodel.MailSendInfo
 import com.zentao.publish.viewmodel.SvnCommitInput
 import com.zentao.publish.viewmodel.SvnList
-import org.apache.poi.hwpf.HWPFDocument
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.nio.charset.Charset
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
 import java.util.regex.Pattern
 import javax.annotation.Resource
 import kotlin.io.path.Path
-import kotlin.io.path.copyTo
-import kotlin.io.path.exists
-import kotlin.io.path.name
 
 @Service
 class DefaultSvnServiceImpl : ISvnService {
@@ -45,19 +26,7 @@ class DefaultSvnServiceImpl : ISvnService {
     private lateinit var _userDao: IUserDao
 
     @Resource
-    private lateinit var _productDao: IProductDao
-
-    @Resource
     private lateinit var _projectDao: IProjectDao
-
-    @Resource
-    private lateinit var _subscribeDao: ISubscribeDao
-
-    @Resource
-    private lateinit var _historyService: IHistoryService
-
-    @Autowired
-    private lateinit var _mailService: IMailService
 
     @Value("\${publishpath}")
     private lateinit var _appdata: String
@@ -189,136 +158,7 @@ class DefaultSvnServiceImpl : ISvnService {
         return output.joinToString("\r\n")
     }
 
-    @Scheduled(fixedRate = 600000, initialDelay = 10000)
-    override fun listenProduct() {
-        log.info("开始检查更新")
-        try {
-            val userList = _userDao.getAll()
-            val productList = _productDao.getAll()
-            val projectList = _projectDao.getAll()
-            val subscribeList = _subscribeDao.getAll()
-
-            log.info("共查询到user-${userList.count()}个, product-${productList.count()}个, project-${projectList.count()}个, subscribe-${subscribeList.count()}个")
-
-            for (product in productList) {
-                log.info("当前产品:${product.id} ${product.name}")
-                val subscribes = subscribeList.filter { p -> p.productId == product.id }
-                log.info("\t订阅数量:${subscribes.count()}")
-                for (subscribe in subscribes) {
-                    try {
-                        val project = projectList.find { p -> p.id == subscribe.projectId } ?: continue
-                        val user = userList.find { p -> p.id == project.userId } ?: continue
-                        val publishPath = "${product.publishPath}/${subscribe.productSubPath}"
-                        log.info("\t订阅项目:${project.id} ${project.name}")
-                        val list =
-                            exec(
-                                "svn list \"${publishPath}\" --verbose --username ${user.username} --password ${
-                                    Encrypt.decrypt(
-                                        user.password!!
-                                    )
-                                }"
-                            ).drop(
-                                1
-                            ).map { p ->
-                                val split = p.splitRemoveEmpty(" ")
-                                SvnList(split[0], split[1], split.elementAtOrElse(6) { "" }.removeSuffix("/"))
-                            }
-
-                        val lastVersion = list.maxByOrNull { p -> p.revision.toInt() } ?: continue
-                        log.info("\t产品最新版本:${lastVersion.entryName}")
-
-                        val currentVersion = subscribe.lastProductVersion
-                        log.info("\t项目最新版本:${currentVersion}")
-                        if (checkNeedUpdate(
-                                user,
-                                publishPath,
-                                subscribe.productId!!,
-                                subscribe.projectId!!,
-                                lastVersion.entryName,
-                                currentVersion
-                            )
-                        ) {
-                            log.info("当前项目需要更新")
-                            val path =
-                                Path(this._appdata, "publish", "product", product.name!!, subscribe.productSubPath!!, lastVersion.entryName)
-                            if (!path.toFile().exists()) {
-                                if (path.parent.exists()) {
-                                    exec(
-                                        "svn update \"${path.parent}\" --username ${user.username} --password ${
-                                            Encrypt.decrypt(
-                                                user.password!!
-                                            )
-                                        }"
-                                    )
-                                } else {
-                                    log.info("\t首次更新产品, 正在努力检出...")
-                                    exec(
-                                        "svn checkout \"${publishPath}\" \"${path.parent}\" --username ${user.username} --password ${
-                                            Encrypt.decrypt(
-                                                user.password!!
-                                            )
-                                        }"
-                                    )
-                                }
-                            }
-
-                            val projectVersion = create(project.id!!)
-                            log.info("\t项目版本已创建:${Path(projectVersion).name}")
-                            path.copyTo(Path(projectVersion, lastVersion.entryName), true)
-                            createDeployDoc(projectVersion, product.name!!, lastVersion.entryName)
-                            commit(SvnCommitInput(project.id!!, Path(projectVersion).name))
-                            log.info("\t项目版本已提交:${Path(projectVersion).name}")
-                            subscribe.lastProductVersion = lastVersion.entryName
-                            subscribe.lastProductTime = Date()
-                            _subscribeDao.update(subscribe)
-                            _historyService.create(
-                                History(
-                                    id = UUID.randomUUID().toString(),
-                                    productId = product.id,
-                                    projectId = project.id,
-                                    productVersion = lastVersion.entryName,
-                                    projectVersion = Path(projectVersion).name,
-                                    publishTime = Date(),
-                                    createTime = Date()
-                                )
-                            )
-                            log.info("\t准备发送邮件至:${user.email}")
-                            _mailService.send(
-                                user.email!!, MailSendInfo(
-                                    productName = product.name!!,
-                                    productPublishPath = "${publishPath}/${lastVersion.entryName}",
-                                    publishDate = SimpleDateFormat("yyyy/MM/dd HH:mm").format(Date()),
-                                    projectName = project.name!!,
-                                    projectVersion = Path(projectVersion).name,
-                                    projectPublishPath = "${project.publishPath!!.removeSuffix("/")}/${
-                                        Path(
-                                            projectVersion
-                                        ).name
-                                    }",
-                                    zentaoAddress = "http://zentao.wuhanins.com:88/zentao/my/",
-                                    description = "${product.name}产品更新: ${lastVersion.entryName}"
-                                )
-                            )
-                            log.info("\t邮件已发送")
-                        } else {
-                            log.info("\t当前项目不需要更新")
-                        }
-                    } catch (error: Throwable) {
-                        log.error("检查更新异常: $subscribe", error)
-                        _mailService.errorReport("订阅${subscribe}更新异常: " + error.message, error)
-                    }
-                }
-            }
-        } catch (error: Throwable) {
-            log.error("检查更新异常", error)
-            _mailService.errorReport(error.message!!, error)
-            log.info("检查更新异常报告已发送")
-        } finally {
-            log.info("更新完毕")
-        }
-    }
-
-    private fun exec(args: String): List<String> {
+    override fun exec(args: String): List<String> {
         val process = Runtime.getRuntime().exec(args)
         val lines = process.inputStream.reader(Charset.forName("GBK")).use {
             it.readLines()
@@ -330,65 +170,5 @@ class DefaultSvnServiceImpl : ISvnService {
         if (exitValue != 0)
             throw RuntimeException(StringBuilder().apply { error.forEach(this::appendLine) }.toString())
         return lines
-    }
-
-    private fun createDeployDoc(projectVersionPath: String, productName: String, productVersion: String) {
-        val projectVersion = Path(projectVersionPath).name
-        val templatePath = Path(projectVersionPath).parent.toString()
-        val templateFile = if (File(templatePath, "上线部署控制表.doc").exists()) {
-            File(templatePath, "上线部署控制表.doc")
-        } else if (File(templatePath, "上线部署控制表.docx").exists()) {
-            File(templatePath, "上线部署控制表.docx")
-        } else {
-            null
-        }
-        if (templateFile == null) return
-
-        FileInputStream(templateFile).use { input ->
-            val doc = HWPFDocument(input)
-            val range = doc.range
-            range.replaceText("\${提测日期}", SimpleDateFormat("yyyy-MM-dd").format(Date()))
-            range.replaceText("\${提测版本}", projectVersion)
-            range.replaceText("\${部署说明}", "${productName}产品更新: $productVersion")
-            FileOutputStream(Path(projectVersionPath, templateFile.name).toFile()).use { output ->
-                doc.write(output)
-            }
-        }
-    }
-
-    private fun checkNeedUpdate(
-        user: PubUser,
-        publishPath: String,
-        productId: String,
-        projectId: String,
-        productVersion: String?,
-        projectVersion: String?
-    ): Boolean {
-        if (projectVersion.isNullOrEmpty()) return true
-        if (productVersion.isNullOrEmpty()) return false
-        val productFile = File(productVersion).nameWithoutExtension
-        val projectFile = File(projectVersion).nameWithoutExtension
-
-        //判断文件最新的日志是否为新增, 如果不是新增则不更新
-        val logs = exec(
-            "svn log -v \"${publishPath}/${productVersion}\" --username ${user.username} --password ${
-                Encrypt.decrypt(
-                    user.password!!
-                )
-            }"
-        )
-
-        if (logs.any()) {
-            val log = Regex("([AM]).*").find(logs.joinToString())
-            if (log != null && log.value.startsWith("M"))
-                return false
-        }
-
-        //检查历史记录, 如果历史记录中已发布, 则不再更新
-        val histories = _historyService.getPage(HistoryPageCondition(productId = productId, projectId = projectId))
-        if (histories.data.any { p -> p.productVersion == productVersion })
-            return false
-
-        return productFile != projectFile
     }
 }

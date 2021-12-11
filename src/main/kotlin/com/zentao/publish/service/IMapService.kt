@@ -37,3 +37,5 @@ interface IMapService {
         }
     }
 }
+
+object MapperService: IMapService
