@@ -4,6 +4,7 @@ import java.util.*
 
 data class PubSubscribe(
     var id: String? = null,
+    var delay: Int? = null,
     var productId: String? = null,
     var projectId: String? = null,
     var productSubPath: String? = null,

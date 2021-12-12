@@ -6,6 +6,7 @@ import com.zentao.publish.dao.IProjectDao
 import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.dao.IUserDao
 import com.zentao.publish.entity.PubUser
+import com.zentao.publish.event.DelayUpdateEvent
 import com.zentao.publish.event.SvnUpdateEvent
 import com.zentao.publish.eventbus.IEventBus
 import com.zentao.publish.extensions.splitRemoveEmpty
@@ -15,16 +16,14 @@ import com.zentao.publish.service.history.IHistoryService
 import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.service.svn.ISvnService
 import com.zentao.publish.util.Encrypt
-import com.zentao.publish.viewmodel.Product
-import com.zentao.publish.viewmodel.Project
-import com.zentao.publish.viewmodel.Subscribe
-import com.zentao.publish.viewmodel.SvnList
+import com.zentao.publish.viewmodel.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
 import javax.annotation.Resource
+import kotlin.io.path.*
 
 @Component
 class Listener {
@@ -105,12 +104,14 @@ class Listener {
                             )
                         ) {
                             log.info("当前项目需要更新")
-                            eventBus.publish(SvnUpdateEvent(
-                                product = MapperService.map(product, Product::class)!!,
-                                project = MapperService.map(project, Project::class)!!,
-                                subscribe = MapperService.map(subscribe, Subscribe::class)!!,
-                                lastVersion = lastVersion
-                            ))
+                            eventBus.publish(
+                                SvnUpdateEvent(
+                                    product = MapperService.map(product, Product::class)!!,
+                                    project = MapperService.map(project, Project::class)!!,
+                                    subscribe = MapperService.map(subscribe, Subscribe::class)!!,
+                                    lastVersion = lastVersion
+                                )
+                            )
                         } else {
                             log.info("\t当前项目不需要更新")
                         }
@@ -124,6 +125,34 @@ class Listener {
             log.error("检查更新异常", error)
             mailService.errorReport(error.message!!, error)
             log.info("检查更新异常报告已发送")
+        } finally {
+            log.info("更新完毕")
+        }
+    }
+
+    /**
+     * 每周一上午9点执行
+     */
+    @Scheduled(cron = "0 0 9 ? * MON")
+    fun listenDelayQueue() {
+        log.info("开始检查更新")
+        try {
+            val projectList = projectDao.getAll()
+
+            for (project in projectList) {
+                val history = historyService.getPage(HistoryPageCondition(projectId = project.id, published = 0))
+                if (history.data.any()) {
+                    eventBus.publish(
+                        DelayUpdateEvent(
+                            project = MapperService.map(project, Project::class)!!,
+                            histories = history.data
+                        )
+                    )
+                }
+            }
+        } catch (error: Throwable) {
+            log.error("检查更新异常", error)
+            mailService.errorReport(error.message!!, error)
         } finally {
             log.info("更新完毕")
         }

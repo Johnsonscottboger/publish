@@ -1,11 +1,13 @@
 package com.zentao.publish
 
+import com.zentao.publish.controller.SubscribeController
 import com.zentao.publish.dao.IHistoryDao
 import com.zentao.publish.entity.PubHistory
 import com.zentao.publish.event.SvnUpdateEvent
 import com.zentao.publish.eventbus.IEventBus
 import com.zentao.publish.eventbus.IEventHandler
 import com.zentao.publish.extensions.deleteRec
+import com.zentao.publish.service.core.Listener
 import com.zentao.publish.service.mail.IMailService
 import com.zentao.publish.viewmodel.MailSendInfo
 import com.zentao.publish.viewmodel.Project
@@ -18,19 +20,15 @@ import org.springframework.boot.test.context.SpringBootTest
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.security.Key
-import java.security.SecureRandom
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.regex.Pattern
 import javax.annotation.Resource
-import javax.crypto.Cipher
-import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.DESKeySpec
-import kotlin.io.path.*
+import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.exists
 
 @SpringBootTest
 class PublishApplicationTests {
@@ -194,5 +192,21 @@ class PublishApplicationTests {
         eventBus.unsubscribe(SvnUpdateHandler::class.java)
 
         eventBus.subscribe(SvnUpdateHandler::class.java)
+    }
+
+    @Resource
+    private lateinit var listener : Listener
+
+    @Test
+    fun `Test delay publish`() {
+        listener.listenDelayQueue()
+    }
+
+    @Resource
+    private lateinit var subscribeController: SubscribeController
+
+    @Test
+    fun `Test manual publish`() {
+        subscribeController.publish("6ec39c23-63e8-456b-98a2-3dbdc8bd8dcf", "21d67805-39f9-41df-8cc9-4c5196c0be2c")
     }
 }

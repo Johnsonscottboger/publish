@@ -76,4 +76,11 @@ class SubscribeController {
     fun getPage(condition: SubscribePageCondition): PageResult<Subscribe> {
         return _service.getPage(condition)
     }
+
+    @ResponseBody
+    @ApiOperation("立即检查并发布版本")
+    @PostMapping("/publish/{projectId}/{productId}")
+    fun publish(@PathVariable projectId: String, @PathVariable productId: String): String {
+        return _service.publish(projectId, productId)
+    }
 }

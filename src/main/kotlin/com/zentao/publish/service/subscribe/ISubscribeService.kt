@@ -25,4 +25,6 @@ interface ISubscribeService : IMapService {
     fun deleteByProject(projectId: String)
 
     fun getPage(condition: SubscribePageCondition): PageResult<Subscribe>
+
+    fun publish(projectId: String, productId: String) : String
 }

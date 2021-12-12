@@ -1,6 +1,7 @@
 package com.zentao.publish.service.core
 
 import com.zentao.publish.dao.IUserDao
+import com.zentao.publish.event.DelayUpdateEvent
 import com.zentao.publish.event.SvnUpdateEvent
 import com.zentao.publish.eventbus.IEventHandler
 import com.zentao.publish.service.history.IHistoryService
@@ -21,10 +22,7 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.annotation.Resource
-import kotlin.io.path.Path
-import kotlin.io.path.copyTo
-import kotlin.io.path.exists
-import kotlin.io.path.name
+import kotlin.io.path.*
 
 @Component
 class Subscriber : IEventHandler<SvnUpdateEvent> {
@@ -82,6 +80,22 @@ class Subscriber : IEventHandler<SvnUpdateEvent> {
             }
         }
 
+        if(e.subscribe.delay == 1) {
+            historyService.create(
+                History(
+                    id = UUID.randomUUID().toString(),
+                    productId = e.product.id,
+                    projectId = e.project.id,
+                    productVersion = e.lastVersion.entryName,
+                    projectVersion = null,
+                    published = 0,
+                    publishTime = Date(),
+                    createTime = Date()
+                )
+            )
+            return
+        }
+
         val projectVersion = svnService.create(e.project.id!!)
         log.info("\t项目版本已创建:${Path(projectVersion).name}")
         path.copyTo(Path(projectVersion, e.lastVersion.entryName), true)
@@ -97,6 +111,7 @@ class Subscriber : IEventHandler<SvnUpdateEvent> {
                 projectId = e.project.id,
                 productVersion = e.lastVersion.entryName,
                 projectVersion = Path(projectVersion).name,
+                published = 1,
                 publishTime = Date(),
                 createTime = Date()
             )

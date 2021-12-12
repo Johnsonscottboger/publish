@@ -8,6 +8,7 @@ data class PubHistory(
     var projectId: String? = null,
     var productVersion: String? = null,
     var projectVersion: String? = null,
+    val published: Int? = null,
     var publishTime: Date? = null,
     var createTime: Date? = null
 )

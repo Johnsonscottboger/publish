@@ -7,6 +7,7 @@
         <result column="project_id" property="projectId" jdbcType="CHAR"/>
         <result column="product_version" property="productVersion" jdbcType="VARCHAR"/>
         <result column="project_version" property="projectVersion" jdbcType="VARCHAR"/>
+        <result column="published" property="published" jdbcType="INTEGER"/>
         <result column="publish_time" property="publishTime"/>
         <result column="create_time" property="createTime"/>
     </resultMap>
@@ -17,6 +18,7 @@
                                  project_id,
                                  product_version,
                                  project_version,
+                                 published,
                                  publish_time,
                                  create_time)
         values (#{id},
@@ -24,6 +26,7 @@
                 #{projectId},
                 #{productVersion},
                 #{projectVersion},
+                #{published},
                 #{publishTime},
                 #{createTime})
     </insert>
@@ -34,6 +37,7 @@
             project_id      = #{projectId},
             product_version = #{productVersion},
             project_version = #{projectVersion},
+            published       = #{published},
             publish_time    = #{publishTime},
             create_time     = #{createTime}
         where id = #{id}
@@ -86,6 +90,9 @@
             </if>
             <if test="null != projectVersion and projectVersion != ''">
                 and project_version like concat('%',#{projectVersion}, '%')
+            </if>
+            <if test="null != published">
+                and published = #{published}
             </if>
             <if test="null != publishStartTime">
                 and publish_time >= #{publishStartTime}

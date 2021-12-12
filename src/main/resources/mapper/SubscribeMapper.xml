@@ -3,6 +3,7 @@
 <mapper namespace="com.zentao.publish.dao.ISubscribeDao">
     <resultMap id="subscribeMap" type="com.zentao.publish.entity.PubSubscribe">
         <id column="id" property="id" jdbcType="CHAR"/>
+        <result column="delay" property="delay" jdbcType="INTEGER"/>
         <result column="product_id" property="productId" jdbcType="CHAR"/>
         <result column="project_id" property="projectId" jdbcType="CHAR"/>
         <result column="product_sub_path" property="productSubPath" jdbcType="VARCHAR"/>
@@ -14,12 +15,14 @@
 
     <insert id="create" keyProperty="id" keyColumn="id">
         insert into pub_subscribe (id,
+                                   delay,
                                    product_id,
                                    project_id,
                                    product_sub_path,
                                    last_product_version,
                                    create_time)
         values (#{id},
+                #{delay},
                 #{productId},
                 #{projectId},
                 #{productSubPath},
@@ -29,7 +32,8 @@
 
     <update id="update">
         update pub_subscribe
-        set product_id           = #{productId},
+        set delay                = #{delay},
+            product_id           = #{productId},
             project_id           = #{projectId},
             product_sub_path     = #{productSubPath},
             last_product_version = #{lastProductVersion},

@@ -2,9 +2,14 @@ package com.zentao.publish.service.subscribe.impl
 
 import com.github.pagehelper.PageHelper
 import com.github.pagehelper.PageInfo
+import com.zentao.publish.condition.HistoryPageCondition
 import com.zentao.publish.condition.SubscribePageCondition
 import com.zentao.publish.dao.ISubscribeDao
 import com.zentao.publish.entity.PubSubscribe
+import com.zentao.publish.event.DelayUpdateEvent
+import com.zentao.publish.eventbus.IEventBus
+import com.zentao.publish.service.history.IHistoryService
+import com.zentao.publish.service.project.IProjectService
 import com.zentao.publish.service.subscribe.ISubscribeService
 import com.zentao.publish.viewmodel.PageResult
 import com.zentao.publish.viewmodel.Subscribe
@@ -15,6 +20,15 @@ import javax.annotation.Resource
 
 @Service
 class DefaultSubscribeServiceImpl : ISubscribeService {
+
+    @Resource
+    private lateinit var _eventBus: IEventBus
+
+    @Resource
+    private lateinit var _projectService: IProjectService
+
+    @Resource
+    private lateinit var _historyService: IHistoryService
 
     @Resource
     private lateinit var _dao: ISubscribeDao
@@ -77,5 +91,20 @@ class DefaultSubscribeServiceImpl : ISubscribeService {
         val entities = map(_dao.getPage(condition), Subscribe::class)
         val pageInfo = PageInfo(entities)
         return PageResult(pageInfo.total, pageInfo.list)
+    }
+
+    override fun publish(projectId: String, productId: String) : String {
+        val project = _projectService.getById(projectId) ?: throw IllegalArgumentException("找不到项目")
+        val history =
+            _historyService.getPage(HistoryPageCondition(projectId = projectId, productId = productId, published = 0))
+        if (history.data.isEmpty())
+            return "当前项目中的产品已是最新版本"
+        _eventBus.publish(
+            DelayUpdateEvent(
+                project = project,
+                histories = history.data
+            )
+        )
+        return "已发布最新产品版本"
     }
 }

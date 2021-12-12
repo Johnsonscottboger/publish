@@ -8,6 +8,7 @@ data class HistoryPageCondition(
     val projectId: String? = null,
     val productVersion: String? = null,
     val projectVersion: String? = null,
+    val published: Int? = null,
     val publishStartTime: Date? = null,
     val publishEndTime: Date? = null,
     override val page: PageParam = PageParam(0)

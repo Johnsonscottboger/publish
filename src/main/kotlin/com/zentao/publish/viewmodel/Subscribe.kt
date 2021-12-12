@@ -9,6 +9,9 @@ data class Subscribe(
     @ApiModelProperty("主键")
     val id: String? = null,
 
+    @ApiModelProperty("延迟发布, 0=立即, 1=延迟", required = true)
+    val delay: Int? = null,
+
     @ApiModelProperty("产品ID", required = true)
     val productId: String? = null,
 

@@ -21,6 +21,9 @@ data class History(
     @ApiModelProperty("项目版本号")
     val projectVersion: String? = null,
 
+    @ApiModelProperty("是否已发布, 0=未发布, 1=已发布")
+    val published: Int? = null,
+
     @ApiModelProperty("发布时间")
     val publishTime: Date? = null,
 
